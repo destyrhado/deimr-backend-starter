@@ -1,14 +1,17 @@
 import bcrypt from 'bcryptjs';
+import mongoose, { type FilterQuery } from 'mongoose';
 import { UserRepository } from '../repositories/user.repository.js';
 import type { IUser } from '../models/user.js';
 import { UserRole, UserStatus } from '../types/http.js';
+import { createHttpError } from '../utils/httpError.js';
 
 interface ListOptions {
-  page?: string;
-  limit?: string;
-  role?: string;
-  status?: string;
-  sort?: string;
+  page?: unknown;
+  limit?: unknown;
+  search?: unknown;
+  role?: unknown;
+  status?: unknown;
+  sort?: unknown;
 }
 
 type ProfileUpdatePayload = {
@@ -21,62 +24,128 @@ type AdminUpdatePayload = ProfileUpdatePayload & {
   status?: UserStatus;
 };
 
+const MAX_PAGE_LIMIT = 100;
+const SORTABLE_USER_FIELDS = ['name', 'email', 'role', 'status', 'createdAt', 'updatedAt'] as const;
+
+const getSingleQueryValue = (value: unknown) => (Array.isArray(value) ? value[0] : value);
+
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const parsePositiveInteger = (value: unknown, field: string, fallback: number, max?: number) => {
+  const raw = getSingleQueryValue(value);
+  if (typeof raw === 'undefined') {
+    return fallback;
+  }
+
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1 || (max && parsed > max)) {
+    const range = max ? `between 1 and ${max}` : 'greater than or equal to 1';
+    throw createHttpError(400, 'Invalid pagination parameters', [{ field, message: `${field} must be an integer ${range}.` }]);
+  }
+
+  return parsed;
+};
+
+const parseEnumFilter = <T extends string>(value: unknown, field: string, allowed: readonly T[]) => {
+  const raw = getSingleQueryValue(value);
+  if (typeof raw === 'undefined' || String(raw).trim() === '') {
+    return undefined;
+  }
+
+  const normalized = String(raw).toUpperCase();
+  if (!allowed.includes(normalized as T)) {
+    throw createHttpError(400, 'Invalid filter parameters', [
+      { field, message: `${field} must be one of ${allowed.join(', ')}.` }
+    ]);
+  }
+
+  return normalized as T;
+};
+
+const parseSort = (value: unknown) => {
+  const raw = String(getSingleQueryValue(value) ?? '-createdAt').trim() || '-createdAt';
+  const direction = raw.startsWith('-') ? -1 : 1;
+  const field = raw.replace(/^-/, '');
+
+  if (!SORTABLE_USER_FIELDS.includes(field as (typeof SORTABLE_USER_FIELDS)[number])) {
+    throw createHttpError(400, 'Invalid sort parameter', [
+      {
+        field: 'sort',
+        message: `Sort must be one of ${SORTABLE_USER_FIELDS.join(', ')} with an optional leading "-".`
+      }
+    ]);
+  }
+
+  return { [field]: direction as 1 | -1 };
+};
+
+const sanitizeUser = (user: IUser) => ({
+  id: user._id.toString(),
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  status: user.status,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt
+});
+
+const validateUserId = (id: string) => {
+  if (!mongoose.isValidObjectId(id)) {
+    throw createHttpError(400, 'Invalid user id', [{ field: 'id', message: 'User id must be a valid MongoDB ObjectId.' }]);
+  }
+};
+
 export class UserService {
   static async list(options: ListOptions) {
-    const page = Math.max(Number(options.page ?? '1'), 1);
-    const limit = Math.max(Number(options.limit ?? '20'), 1);
-    const filter: Record<string, unknown> = {};
+    const page = parsePositiveInteger(options.page, 'page', 1);
+    const limit = parsePositiveInteger(options.limit, 'limit', 20, MAX_PAGE_LIMIT);
+    const filter: FilterQuery<IUser> = {};
+    const search = String(getSingleQueryValue(options.search) ?? '').trim();
+    const role = parseEnumFilter(options.role, 'role', Object.values(UserRole));
+    const status = parseEnumFilter(options.status, 'status', Object.values(UserStatus));
+    const sort = parseSort(options.sort);
 
-    if (options.role) {
-      filter.role = options.role.toUpperCase();
+    if (search) {
+      const pattern = new RegExp(escapeRegex(search), 'i');
+      filter.$or = [{ name: pattern }, { email: pattern }];
     }
-    if (options.status) {
-      filter.status = options.status.toUpperCase();
+    if (role) {
+      filter.role = role;
+    }
+    if (status) {
+      filter.status = status;
     }
 
     const total = await UserRepository.count(filter);
     const users = await UserRepository.findAll(filter, {
       skip: (page - 1) * limit,
       limit,
-      sort: options.sort ?? '-createdAt'
+      sort
     });
 
-    const sanitized = users.map((user) => ({
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    }));
+    const pages = Math.ceil(total / limit);
 
     return {
-      data: sanitized,
-      meta: {
+      users: users.map(sanitizeUser),
+      pagination: {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages,
+        hasNextPage: page < pages,
+        hasPreviousPage: page > 1
       }
     };
   }
 
   static async getById(id: string) {
+    validateUserId(id);
     const user = await UserRepository.findById(id);
     if (!user) {
-      throw Object.assign(new Error('User not found'), { statusCode: 404 });
+      throw createHttpError(404, 'User not found');
     }
 
-    return {
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    };
+    return sanitizeUser(user);
   }
 
   static async getProfile(id: string) {
@@ -84,6 +153,7 @@ export class UserService {
   }
 
   static async updateProfile(id: string, update: ProfileUpdatePayload) {
+    validateUserId(id);
     const payload: Partial<IUser> = {};
 
     if (update.name) {
@@ -98,48 +168,34 @@ export class UserService {
 
     const user = await UserRepository.updateById(id, payload);
     if (!user) {
-      throw Object.assign(new Error('User not found'), { statusCode: 404 });
+      throw createHttpError(404, 'User not found');
     }
 
-    return {
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    };
+    return sanitizeUser(user);
   }
 
   static async updateRole(id: string, role: UserRole, currentUserId: string) {
+    validateUserId(id);
     if (id === currentUserId) {
-      throw Object.assign(new Error('Cannot change your own role'), { statusCode: 403 });
+      throw createHttpError(403, 'Cannot change your own role');
     }
 
     const user = await UserRepository.findById(id);
     if (!user) {
-      throw Object.assign(new Error('User not found'), { statusCode: 404 });
+      throw createHttpError(404, 'User not found');
     }
 
     if (user.role === UserRole.SUPER_ADMIN && role !== UserRole.SUPER_ADMIN) {
-      throw Object.assign(new Error('Cannot remove SUPER_ADMIN role from a SUPER_ADMIN'), { statusCode: 403 });
+      throw createHttpError(403, 'Cannot remove SUPER_ADMIN role from a SUPER_ADMIN');
     }
 
     const updated = await UserRepository.updateById(id, { role });
 
-    return {
-      id: updated?._id.toString() ?? user._id.toString(),
-      name: updated?.name ?? user.name,
-      email: updated?.email ?? user.email,
-      role: updated?.role ?? user.role,
-      status: updated?.status ?? user.status,
-      createdAt: updated?.createdAt ?? user.createdAt,
-      updatedAt: updated?.updatedAt ?? user.updatedAt
-    };
+    return sanitizeUser(updated ?? user);
   }
 
   static async update(id: string, update: AdminUpdatePayload) {
+    validateUserId(id);
     const payload: Partial<IUser> = {};
     if (update.name) {
       payload.name = update.name;
@@ -156,28 +212,21 @@ export class UserService {
 
     const user = await UserRepository.updateById(id, payload);
     if (!user) {
-      throw Object.assign(new Error('User not found'), { statusCode: 404 });
+      throw createHttpError(404, 'User not found');
     }
 
-    return {
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    };
+    return sanitizeUser(user);
   }
 
   static async delete(id: string, currentUserId: string) {
+    validateUserId(id);
     if (id === currentUserId) {
-      throw Object.assign(new Error('Cannot delete your own account'), { statusCode: 403 });
+      throw createHttpError(403, 'Cannot delete your own account');
     }
 
     const user = await UserRepository.deleteById(id);
     if (!user) {
-      throw Object.assign(new Error('User not found'), { statusCode: 404 });
+      throw createHttpError(404, 'User not found');
     }
 
     return {

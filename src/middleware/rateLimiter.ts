@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { env } from '../config/env.js';
+import { createHttpError } from '../utils/httpError.js';
 
 interface RateLimitEntry {
   count: number;
@@ -22,11 +23,7 @@ export const apiRateLimiter = (req: Request, res: Response, next: NextFunction) 
   requestStore.set(key, entry);
 
   if (entry.count > env.rateLimitMax) {
-    res.status(429).json({
-      success: false,
-      message: 'Too many requests, please try again later.',
-      statusCode: 429
-    });
+    next(createHttpError(429, 'Too many requests, please try again later.'));
     return;
   }
 

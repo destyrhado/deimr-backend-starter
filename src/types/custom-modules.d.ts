@@ -4,7 +4,7 @@ declare module 'swagger-ui-express' {
   import type { Handler } from 'express';
   const swaggerUi: {
     serve: Handler;
-    setup: (swaggerSpec: unknown) => Handler;
+    setup: (swaggerSpec: unknown, options?: unknown) => Handler;
   };
   export default swaggerUi;
 }

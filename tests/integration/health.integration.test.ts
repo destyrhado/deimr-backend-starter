@@ -18,6 +18,10 @@ test('GET /health integration returns ok', async () => {
   const body = await response.json();
 
   assert.equal(response.status, 200);
+  assert.equal(body.service, 'deimr-backend-starter');
+  assert.equal(body.environment, 'development');
+  assert.equal(body.version, '1.0.0');
   assert.equal(body.status, 'ok');
+  assert.equal(typeof body.uptime, 'number');
   server.close();
 });

@@ -3,7 +3,13 @@ export interface ApiResponse<T = unknown> {
   message?: string;
   data?: T;
   statusCode?: number;
-  errors?: Array<{ field: string; message: string }>;
+  requestId?: string;
+  errors?: ValidationError[];
+}
+
+export interface ValidationError {
+  field: string;
+  message: string;
 }
 
 export enum UserRole {
