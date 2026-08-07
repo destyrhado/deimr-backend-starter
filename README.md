@@ -1,35 +1,40 @@
 # Production REST API
 
-A backend REST API built with Node.js, TypeScript, Express.js, and MongoDB.
+A production-ready REST API built with **Node.js**, **TypeScript**, **Express.js**, and **MongoDB Atlas**.
 
-I created this project to demonstrate how I structure and develop backend applications with a focus on maintainability, security, testing, and deployment.
+This project demonstrates how I design and build scalable backend applications using clean architecture, secure authentication, automated testing, API documentation, and modern software engineering practices. It serves as a foundation for developing secure, maintainable, and production-ready REST APIs.
+
+---
 
 ## Tech Stack
 
 - Node.js
 - TypeScript
 - Express.js
-- MongoDB
-- JWT
+- MongoDB Atlas
+- JWT Authentication
+- Swagger (OpenAPI)
 - Docker
-- AWS
+- AWS Elastic Beanstalk
 - GitHub Actions
 
-## Features
+---
 
-- User registration and login
-- JWT authentication
-- Role-based authorization
-- RESTful API design
-- Request validation
-- Centralized error handling
+## Current Features
+
+- User Registration
+- User Authentication (JWT)
+- Role-Based Authorization
+- RESTful API Architecture
+- Request Validation
+- Centralized Error Handling
 - Logging
-- Pagination and filtering
-- Environment-based configuration
-- API documentation
-- Docker support
-- Automated testing
-- CI/CD workflow
+- Environment Configuration
+- Interactive Swagger API Documentation
+
+> Additional features will be implemented as the project evolves.
+
+---
 
 ## Project Structure
 
@@ -45,6 +50,7 @@ src/
 ├── types/
 ├── utils/
 ├── validators/
+├── docs/
 ├── app.ts
 └── server.ts
 
@@ -53,12 +59,15 @@ tests/
 └── integration/
 ```
 
+---
+
 ## Getting Started
 
 Clone the repository:
 
 ```bash
 git clone https://github.com/destyrhado/production-rest-api.git
+
 cd production-rest-api
 ```
 
@@ -68,7 +77,7 @@ Install dependencies:
 npm install
 ```
 
-Create your environment file:
+Create the environment file:
 
 ```bash
 cp .env.example .env
@@ -79,6 +88,8 @@ Start the development server:
 ```bash
 npm run dev
 ```
+
+---
 
 ## Environment Variables
 
@@ -96,49 +107,106 @@ JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
 ```
 
-Never commit real credentials or production secrets to the repository.
+Never commit production credentials or secrets to the repository.
 
-## API
+---
 
-The API will include endpoints for authentication, users, roles, and application resources.
+## API Endpoints
 
-Example:
+### Authentication
 
 ```text
 POST   /api/v1/auth/register
 POST   /api/v1/auth/login
 POST   /api/v1/auth/refresh
+POST   /api/v1/auth/logout
+```
 
+### Users
+
+```text
 GET    /api/v1/users
 GET    /api/v1/users/:id
 PATCH  /api/v1/users/:id
 DELETE /api/v1/users/:id
 ```
 
-## Development Standards
+---
 
-The project follows a few principles:
+## API Documentation
 
-- Keep controllers small
-- Separate business logic into services
-- Validate incoming data
-- Use consistent API responses
-- Handle errors centrally
-- Keep secrets outside the source code
-- Write tests for important application behavior
-- Run automated checks before deployment
+Interactive API documentation is available through **Swagger UI**.
+
+Once deployed:
+
+```text
+Swagger UI
+https://your-app.elasticbeanstalk.com/api/docs
+```
+
+Swagger allows developers to:
+
+- Browse all available endpoints
+- Authenticate using JWT Bearer tokens
+- Test API requests directly from the browser
+- View request and response schemas
+- Explore the API without external tools
+
+---
+
+## Deployment
+
+The application will be deployed using:
+
+- AWS Elastic Beanstalk
+- MongoDB Atlas
+- GitHub Actions
+
+Production URLs:
+
+```text
+API
+https://your-app.elasticbeanstalk.com
+
+Health Check
+https://your-app.elasticbeanstalk.com/health
+
+Swagger
+https://your-app.elasticbeanstalk.com/api/docs
+```
+
+---
+
+## Development Principles
+
+This project follows a few core engineering principles:
+
+- Clean Architecture
+- Separation of Concerns
+- Service & Repository Pattern
+- REST API Best Practices
+- Secure Authentication
+- Environment-based Configuration
+- Centralized Error Handling
+- Production-ready Project Structure
+
+---
 
 ## Testing
+
+Run all tests:
 
 ```bash
 npm test
 ```
 
-For coverage:
+Generate coverage:
 
 ```bash
 npm run test:coverage
 ```
+
+---
 
 ## Docker
 
@@ -154,22 +222,45 @@ Run the container:
 docker run -p 5000:5000 --env-file .env production-rest-api
 ```
 
+---
+
 ## CI/CD
 
-GitHub Actions will be used to automatically:
+GitHub Actions will automatically:
 
-1. Install dependencies
-2. Run linting
-3. Run tests
-4. Build the TypeScript application
+- Install dependencies
+- Run ESLint
+- Execute unit and integration tests
+- Build the TypeScript application
+- Deploy to AWS Elastic Beanstalk
 
-Deployment will only proceed when the required checks pass.
+---
+
+## Roadmap
+
+Planned improvements include:
+
+- Refresh Token Rotation
+- Email Verification
+- Password Reset
+- AWS S3 File Upload
+- Redis Caching
+- Rate Limiting
+- Unit & Integration Testing
+- API Versioning
+- Monitoring & Logging
+- Docker Compose
+- Production Deployment
+
+---
 
 ## Status
 
-This project is under active development.
+🚧 **Active Development**
 
-I'm adding each part incrementally so the repository reflects the same development process I use when building larger applications.
+This project is being developed incrementally to demonstrate production-level backend engineering practices. New features, improvements, and deployment workflows will be added over time.
+
+---
 
 ## Author
 
@@ -179,7 +270,8 @@ Full-Stack Software Engineer
 
 - Node.js
 - TypeScript
-- Vue.js
+- Express.js
+- MongoDB
 - AWS
-- SaaS Development
 - Software Architecture
+- SaaS Development
