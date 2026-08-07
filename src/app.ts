@@ -16,6 +16,10 @@ app.use(cors({ origin: env.corsOrigin, credentials: true }));
 app.use(morgan('dev'));
 app.use(express.json());
 
+app.get('/', (_req, res) => {
+  res.json({ success: true, message: 'Deimr Backend Starter API is running.' });
+});
+
 app.get('/health', (_req, res) => {
   res.json({ success: true, status: 'ok', service: 'deimr-backend-starter' });
 });
