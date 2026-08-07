@@ -2,8 +2,8 @@ import type { ErrorRequestHandler, NextFunction, Request, Response } from 'expre
 import { sendError } from '../utils/response.js';
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next: NextFunction) => {
-  const statusCode = err.statusCode ?? 500;
-  const message = statusCode >= 500 ? 'Internal Server Error' : err.message ?? 'Internal Server Error';
+  const statusCode = (err as { statusCode?: number }).statusCode ?? 500;
+  const message = statusCode >= 500 ? 'Internal Server Error' : (err as { message?: string }).message ?? 'Internal Server Error';
 
   res.status(statusCode).json(sendError(message, statusCode));
 };

@@ -10,8 +10,8 @@ const startServer = async () => {
 
     app.listen(env.port, () => {
       console.log(`Server is running on http://localhost:${env.port}`);
-    }).on('error', (error: NodeJS.ErrnoException) => {
-      if (error.code === 'EADDRINUSE') {
+    }).on('error', (error: any) => {
+      if (error?.code === 'EADDRINUSE') {
         console.error(`Port ${env.port} is already in use. Please free port ${env.port} and try again.`);
       } else {
         console.error('Server error:', error);

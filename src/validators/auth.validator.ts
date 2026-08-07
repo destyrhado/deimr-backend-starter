@@ -4,8 +4,8 @@ const isEmail = (value: unknown) => typeof value === 'string' && /^[^\s@]+@[^\s@
 const isString = (value: unknown) => typeof value === 'string' && value.trim().length > 0;
 
 export const validateRegister = (req: Request, res: Response, next: NextFunction) => {
-  const { email, password } = req.body;
-  if (!isEmail(email) || !isString(password) || password.length < 8) {
+  const { name, email, password } = req.body;
+  if (!isString(name) || !isEmail(email) || !isString(password) || password.length < 8) {
     res.status(400).json({ success: false, message: 'Invalid registration data', statusCode: 400 });
     return;
   }

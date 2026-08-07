@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -19,11 +19,11 @@ app.use(morgan('combined', { stream: logger.stream }));
 app.use(apiRateLimiter);
 app.use(express.json());
 
-app.get('/', (_req, res) => {
+app.get('/', (_req: Request, res: Response) => {
   res.json({ success: true, message: 'Deimr Backend Starter API is running.' });
 });
 
-app.get('/health', (_req, res) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.json({ success: true, status: 'ok', service: 'deimr-backend-starter' });
 });
 
