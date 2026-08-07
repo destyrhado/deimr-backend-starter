@@ -5,8 +5,8 @@ import { sendError, sendSuccess } from '../utils/response.js';
 export class AuthController {
   static async register(req: Request, res: Response, next: NextFunction) {
     try {
-      const { email, password } = req.body;
-      const result = await AuthService.register(email, password);
+      const { name, email, password } = req.body;
+      const result = await AuthService.register(name, email, password);
       res.status(201).json(sendSuccess('User registered successfully', result, 201));
     } catch (error) {
       next(error);
