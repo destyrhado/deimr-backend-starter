@@ -672,3 +672,4 @@ This helps keep controllers clean and provides consistent error responses across
 Example:
 
 ```json
+```
