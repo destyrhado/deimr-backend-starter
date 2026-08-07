@@ -1,16 +1,16 @@
 # Deimr Backend Starter API
 
-![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
-![Express.js](https://img.shields.io/badge/Express.js-Backend-black?logo=express)
-![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)
-![Swagger](https://img.shields.io/badge/Swagger-OpenAPI-85EA2D?logo=swagger&logoColor=black)
-![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker&logoColor=white)
-![Render](https://img.shields.io/badge/Render-Deploy-46E3B7?logo=render&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?logo=githubactions&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-blue)
+\![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js&logoColor=white)
+\![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
+\![Express.js](https://img.shields.io/badge/Express.js-Backend-black?logo=express)
+\![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)
+\![Swagger](https://img.shields.io/badge/Swagger-OpenAPI-85EA2D?logo=swagger&logoColor=black)
+\![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker&logoColor=white)
+\![Render](https://img.shields.io/badge/Render-Deploy-46E3B7?logo=render&logoColor=white)
+\![GitHub Actions](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?logo=githubactions&logoColor=white)
+\![License](https://img.shields.io/badge/License-MIT-blue)
 
-A production ready backend starter built with **Node.js**, **TypeScript**, **Express.js**, and **MongoDB Atlas**.
+A production-ready backend starter built with **Node.js**, **TypeScript**, **Express.js**, and **MongoDB Atlas**.
 
 I created this project as a reusable foundation for building secure, scalable, and maintainable REST APIs. It reflects the architecture, coding standards, and engineering practices I follow when developing production backend services.
 
@@ -202,7 +202,7 @@ Update `.env` with your local configuration.
 Example:
 
 ```env
-PORT=5000
+PORT=5001
 
 NODE_ENV=development
 
@@ -232,7 +232,7 @@ npm run dev
 The API will be available at:
 
 ```text
-http://localhost:5000
+http://localhost:5001
 ```
 
 ### Build
@@ -400,7 +400,7 @@ npm run dev
 Then open:
 
 ```text
-http://localhost:5000/api/docs
+http://localhost:5001/api/docs
 ```
 
 ### Production Swagger
@@ -408,8 +408,10 @@ http://localhost:5000/api/docs
 After deployment to Render:
 
 ```text
-https://deimr-backend-starter.onrender.com/api/docs
+https://your-app.onrender.com/api/docs
 ```
+
+Replace `your-app` with the actual Render service name.
 
 ### Swagger Features
 
@@ -455,7 +457,7 @@ Example:
 ### 3. Open Swagger UI
 
 ```text
-http://localhost:5000/api/docs
+http://localhost:5001/api/docs
 ```
 
 ### 4. Click `Authorize`
@@ -527,7 +529,7 @@ const swaggerOptions: swaggerJsdoc.Options = {
 
     servers: [
       {
-        url: "http://localhost:5000",
+        url: "http://localhost:5001",
         description: "Local Development"
       },
       {
@@ -645,7 +647,7 @@ Example input:
 ```json
 {
   "email": "john@example.com",
-  "password": "StrongPassword123!"
+  "password": "StrongPassword123\!"
 }
 ```
 
@@ -670,4 +672,394 @@ This helps keep controllers clean and provides consistent error responses across
 Example:
 
 ```json
+{
+  "success": false,
+  "statusCode": 404,
+  "message": "User not found"
+}
 ```
+
+---
+
+## Logging
+
+Structured logging can be used for:
+
+- HTTP Requests
+- Application Errors
+- Authentication Events
+- Database Errors
+- System Events
+- Deployment Diagnostics
+
+Sensitive values such as passwords, JWT secrets, refresh tokens, and database credentials must never be logged.
+
+---
+
+## Pagination
+
+List endpoints can support pagination using query parameters.
+
+Example:
+
+```http
+GET /api/v1/users?page=1&limit=20
+```
+
+Example metadata:
+
+```json
+{
+  "page": 1,
+  "limit": 20,
+  "total": 125,
+  "pages": 7
+}
+```
+
+---
+
+## Filtering and Sorting
+
+Example filtering:
+
+```http
+GET /api/v1/users?role=admin
+```
+
+Example sorting:
+
+```http
+GET /api/v1/users?sort=-createdAt
+```
+
+These patterns make list APIs more useful and scalable as datasets grow.
+
+---
+
+## Testing
+
+The project supports unit and integration testing.
+
+### Run Tests
+
+```bash
+npm test
+```
+
+### Generate Coverage
+
+```bash
+npm run test:coverage
+```
+
+Tests are organized as:
+
+```text
+tests/
+├── integration/
+└── unit/
+```
+
+### Unit Tests
+
+Unit tests focus on individual services, utilities, and business logic.
+
+### Integration Tests
+
+Integration tests verify application behavior across routes, middleware, services, and persistence layers.
+
+---
+
+## Docker
+
+The application can run inside a Docker container.
+
+### Build the Image
+
+```bash
+docker build -t deimr-backend-starter .
+```
+
+### Run the Container
+
+```bash
+docker run \
+  -p 5001:5001 \
+  --env-file .env \
+  deimr-backend-starter
+```
+
+The application will be available at:
+
+```text
+http://localhost:5001
+```
+
+---
+
+## Docker Compose
+
+Docker Compose can be used to run the application and supporting services locally.
+
+Start:
+
+```bash
+docker compose up
+```
+
+Stop:
+
+```bash
+docker compose down
+```
+
+---
+
+## Deployment
+
+The public API is deployed using **Render**, with **MongoDB Atlas** providing the managed database.
+
+Architecture:
+
+```text
+GitHub
+   │
+   ▼
+GitHub Actions
+   │
+   ▼
+Render
+   │
+   ▼
+Node.js / Express API
+   │
+   ▼
+MongoDB Atlas
+```
+
+---
+
+## Production URLs
+
+After deployment, replace the placeholders below with the actual Render service URL.
+
+### API
+
+```text
+https://your-app.onrender.com
+```
+
+### Swagger
+
+```text
+https://your-app.onrender.com/api/docs
+```
+
+### Health Check
+
+```text
+https://your-app.onrender.com/health
+```
+
+---
+
+## Render Deployment
+
+Create a Render Web Service and connect the GitHub repository.
+
+Recommended configuration:
+
+```text
+Environment
+Node
+
+Build Command
+npm install && npm run build
+
+Start Command
+npm run start
+```
+
+Production environment variables should be configured directly inside Render.
+
+Never store production secrets in the GitHub repository.
+
+---
+
+## CI/CD
+
+GitHub Actions can automatically validate the project before deployment.
+
+Pipeline:
+
+```text
+Push / Pull Request
+        │
+        ▼
+Install Dependencies
+        │
+        ▼
+Run ESLint
+        │
+        ▼
+Run Tests
+        │
+        ▼
+Build TypeScript
+        │
+        ▼
+Deploy
+```
+
+---
+
+## Engineering Principles
+
+The project follows engineering practices intended to keep the application maintainable as it grows.
+
+These include:
+
+- Clean Architecture
+- SOLID Principles
+- Separation of Concerns
+- Service Layer Pattern
+- Repository Pattern
+- REST API Best Practices
+- API Versioning
+- Secure Authentication
+- Centralized Error Handling
+- Environment-Based Configuration
+- Consistent API Responses
+- Testable Business Logic
+- Scalable Project Organization
+
+---
+
+## Repository Pattern
+
+Database access is separated from business logic.
+
+```text
+Controller
+    │
+    ▼
+Service
+    │
+    ▼
+Repository
+    │
+    ▼
+MongoDB
+```
+
+---
+
+## Development Standards
+
+The project follows several practical development rules:
+
+- Keep controllers small.
+- Keep business logic inside services.
+- Keep database logic inside repositories.
+- Validate incoming requests.
+- Avoid exposing sensitive information.
+- Keep configuration outside source code.
+- Use predictable API response structures.
+- Handle errors globally.
+- Write tests for important application behavior.
+- Run automated checks before deployment.
+
+---
+
+## Roadmap
+
+Planned improvements include:
+
+- Email Verification
+- Password Reset
+- Refresh Token Rotation
+- AWS S3 / Cloudinary File Upload
+- Redis Caching
+- Advanced Rate Limiting
+- API Versioning
+- Expanded Unit Tests
+- Expanded Integration Tests
+- Request Correlation IDs
+- Monitoring
+- Structured Production Logging
+- Docker Compose
+- Search
+- Filtering
+- Sorting
+- Pagination
+- Background Jobs
+- Webhooks
+- Production Deployment Improvements
+
+---
+
+## Status
+
+🚧 **Active Development**
+
+The project is being developed incrementally.
+
+New features, tests, deployment workflows, security improvements, and documentation will continue to be added as the project evolves.
+
+---
+
+## About Deimr
+
+This repository is a public backend reference inspired by the engineering practices used while building **Deimr**, a SaaS platform focused on electronics repair and e-commerce.
+
+The purpose of this repository is to demonstrate backend architecture, API design, security practices, deployment workflows, testing strategies, and code organization without exposing Deimr's private systems.
+
+This repository does **not** contain:
+
+- Deimr Production Source Code
+- Proprietary Business Logic
+- Production Credentials
+- Private Infrastructure Configuration
+- Customer Information
+- Internal APIs
+- Private Payment Infrastructure
+
+---
+
+## License
+
+Released under the **MIT License**.
+
+See the `LICENSE` file for details.
+
+---
+
+## Author
+
+### Ibrahim Destiny
+
+**Senior Full-Stack Software Engineer**
+
+Core technologies:
+
+- Node.js
+- TypeScript
+- Express.js
+- MongoDB Atlas
+- REST APIs
+- JWT Authentication
+- Swagger / OpenAPI
+- Docker
+- GitHub Actions
+- Render
+- Software Architecture
+- SaaS Development
+
+### GitHub
+
+https://github.com/destyrhado
+
+### LinkedIn
+
+https://linkedin.com/in/ibrahim-destiny-a24062268

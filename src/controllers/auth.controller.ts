@@ -37,4 +37,14 @@ export class AuthController {
       next(error);
     }
   }
+
+  static async logout(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { refreshToken } = req.body;
+      const result = await AuthService.logout(refreshToken);
+      res.status(200).json(sendSuccess('Logout successful', result));
+    } catch (error) {
+      next(error);
+    }
+  }
 }

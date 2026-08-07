@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller.js';
+import { validateLogin, validateRefresh, validateRegister } from '../validators/auth.validator.js';
 
 const router = Router();
 
@@ -24,7 +25,7 @@ const router = Router();
  *       201:
  *         description: User created
  */
-router.post('/register', AuthController.register);
+router.post('/register', validateRegister, AuthController.register);
 
 /**
  * @openapi
@@ -47,7 +48,7 @@ router.post('/register', AuthController.register);
  *       200:
  *         description: Auth successful
  */
-router.post('/login', AuthController.login);
+router.post('/login', validateLogin, AuthController.login);
 
 /**
  * @openapi
@@ -68,6 +69,7 @@ router.post('/login', AuthController.login);
  *       200:
  *         description: Access token refreshed
  */
-router.post('/refresh', AuthController.refresh);
+router.post('/refresh', validateRefresh, AuthController.refresh);
+router.post('/logout', validateRefresh, AuthController.logout);
 
 export default router;

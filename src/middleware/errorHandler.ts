@@ -3,7 +3,7 @@ import { sendError } from '../utils/response.js';
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next: NextFunction) => {
   const statusCode = err.statusCode ?? 500;
-  const message = err.message ?? 'Internal Server Error';
+  const message = statusCode >= 500 ? 'Internal Server Error' : err.message ?? 'Internal Server Error';
 
   res.status(statusCode).json(sendError(message, statusCode));
 };

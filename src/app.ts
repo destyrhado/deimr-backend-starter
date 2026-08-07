@@ -8,12 +8,15 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.routes.js';
 import usersRoutes from './routes/users.routes.js';
 import { swaggerSpec } from './docs/swagger.js';
+import { apiRateLimiter } from './middleware/rateLimiter.js';
+import { logger } from './config/logger.js';
 
 const app = express();
 
 app.use(helmet());
 app.use(cors({ origin: env.corsOrigin, credentials: true }));
-app.use(morgan('dev'));
+app.use(morgan('combined', { stream: logger.stream }));
+app.use(apiRateLimiter);
 app.use(express.json());
 
 app.get('/', (_req, res) => {
