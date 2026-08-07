@@ -27,7 +27,16 @@ app.get('/health', (_req: Request, res: Response) => {
   res.json({ success: true, status: 'ok', service: 'deimr-backend-starter' });
 });
 
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    filter: true,
+    deepLinking: true,
+    displayOperationId: false,
+    tryItOutEnabled: true
+  }
+}));
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', usersRoutes);
 
