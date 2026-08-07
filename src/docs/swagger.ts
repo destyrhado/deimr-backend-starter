@@ -8,7 +8,7 @@ const swaggerDefinition = {
     description: 'A production-ready starter API built with Node.js, TypeScript, Express, and MongoDB.'
   },
   servers: [
-    { url: 'http://localhost:5000', description: 'Local development' }
+    { url: 'https://deimr-backend-starter.onrender.com', description: 'Production' }
   ],
   components: {
     securitySchemes: {

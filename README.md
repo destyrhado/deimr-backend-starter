@@ -408,10 +408,8 @@ http://localhost:5000/api/docs
 After deployment to Render:
 
 ```text
-https://your-app.onrender.com/api/docs
+https://deimr-backend-starter.onrender.com/api/docs
 ```
-
-Replace `your-app` with the actual Render service name.
 
 ### Swagger Features
 
