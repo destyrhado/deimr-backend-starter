@@ -6,9 +6,20 @@ export interface ApiResponse<T = unknown> {
   errors?: Array<{ field: string; message: string }>;
 }
 
-export type UserRole = 'USER' | 'ADMIN' | 'SUPER_ADMIN';
+export enum UserRole {
+  USER = 'USER',
+  ADMIN = 'ADMIN',
+  SUPER_ADMIN = 'SUPER_ADMIN'
+}
+
+export enum UserStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  SUSPENDED = 'SUSPENDED'
+}
 
 export interface AuthPayload {
   sub: string;
+  email: string;
   role: UserRole;
 }

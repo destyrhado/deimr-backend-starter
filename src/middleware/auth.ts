@@ -13,25 +13,23 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
   try {
     const token = authHeader.split(' ')[1];
     const payload = jwt.verify(token, env.jwtAccessSecret) as AuthPayload;
-    req.user = { id: payload.sub, role: payload.role };
+    req.user = { id: payload.sub, email: payload.email, role: payload.role };
     next();
   } catch {
     res.status(401).json({ success: false, message: 'Invalid or expired token', statusCode: 401 });
   }
 };
 
-export const authorize = (...roles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: 'Unauthorized', statusCode: 401 });
-      return;
-    }
+export const authorize = (...roles: string[]) => (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: 'Unauthorized', statusCode: 401 });
+    return;
+  }
 
-    if (!roles.includes(req.user.role)) {
-      res.status(403).json({ success: false, message: 'Forbidden', statusCode: 403 });
-      return;
-    }
+  if (!roles.includes(req.user.role)) {
+    res.status(403).json({ success: false, message: 'You do not have permission to access this resource.', statusCode: 403 });
+    return;
+  }
 
-    next();
-  };
+  next();
 };

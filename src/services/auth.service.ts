@@ -21,7 +21,7 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: passwordHash, role: 'USER' });
+    const user = await User.create({ name, email, passwordHash, role: 'USER' });
 
     return {
       id: user._id.toString(),
@@ -37,13 +37,14 @@ export class AuthService {
       throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });
     }
 
-    const valid = await bcrypt.compare(password, user.password);
+    const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });
     }
 
-    const accessToken = this.generateAccessToken({ sub: user._id.toString(), role: user.role });
-    const refreshToken = this.generateRefreshToken({ sub: user._id.toString(), role: user.role });
+    const payload = { sub: user._id.toString(), email: user.email, role: user.role };
+    const accessToken = this.generateAccessToken(payload);
+    const refreshToken = this.generateRefreshToken(payload);
     await RefreshTokenRepository.create({
       token: refreshToken,
       userId: user._id.toString(),
@@ -69,8 +70,8 @@ export class AuthService {
     }
 
     const payload = jwt.verify(token, env.jwtRefreshSecret) as AuthPayload;
-    const accessToken = this.generateAccessToken({ sub: payload.sub, role: payload.role });
-    const refreshToken = this.generateRefreshToken({ sub: payload.sub, role: payload.role });
+    const accessToken = this.generateAccessToken({ sub: payload.sub, email: payload.email, role: payload.role });
+    const refreshToken = this.generateRefreshToken({ sub: payload.sub, email: payload.email, role: payload.role });
 
     await RefreshTokenRepository.revoke(token);
     await RefreshTokenRepository.create({
