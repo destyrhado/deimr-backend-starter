@@ -26,7 +26,7 @@ The live service is hosted on Render. The repository includes `render.yaml`; pro
 
 ## Tech Stack
 
-- Node.js 20.16+; CI, Docker, and Render are configured for Node.js 22
+- Node.js 22 for local production parity, CI, Docker, and Render
 - TypeScript 5
 - Express 4
 - MongoDB Atlas with Mongoose
@@ -332,13 +332,13 @@ The repository includes `render.yaml` for Render Blueprint deployment.
 
 Render configuration:
 
-| Setting           | Value                     |
-| ----------------- | ------------------------- |
-| Runtime           | Node                      |
-| Node version      | `22`                      |
-| Build command     | `npm ci && npm run build` |
-| Start command     | `npm run start`           |
-| Health check path | `/health`                 |
+| Setting           | Value                                                           |
+| ----------------- | --------------------------------------------------------------- |
+| Runtime           | Node                                                            |
+| Node version      | `22.x`                                                          |
+| Build command     | `npm ci --include=dev && npm run build && npm prune --omit=dev` |
+| Start command     | `npm run start`                                                 |
+| Health check path | `/health`                                                       |
 
 Production secrets are not committed. Configure these in Render:
 
@@ -348,6 +348,8 @@ Production secrets are not committed. Configure these in Render:
 - `CORS_ORIGIN`
 
 `APP_URL` is optional on Render because the app falls back to Render's `RENDER_EXTERNAL_URL`. Set `APP_URL` only when using a custom domain or non-Render host.
+
+If configuring Render from the dashboard instead of `render.yaml`, use the exact build command above. A plain `npm install && npm run build` can fail when Render omits dev dependencies during production builds, because TypeScript and `@types/node` are build-time dependencies.
 
 ## Security Notes
 
