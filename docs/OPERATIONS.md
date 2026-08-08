@@ -14,7 +14,7 @@ Render uses `/ready` as the service health check so deployment health depends on
 
 Production startup fails fast when required configuration is missing or unsafe:
 
-- `MONGODB_URI`
+- `MONGODB_URI`; `MONGO_URI` is also accepted as a compatibility alias
 - `JWT_ACCESS_SECRET`
 - `JWT_REFRESH_SECRET`
 - `CORS_ORIGIN`

@@ -27,7 +27,7 @@ const isProduction = nodeEnv === 'production';
 const appUrl = process.env.APP_URL || renderExternalUrl;
 const jwtAccessSecret = process.env.JWT_ACCESS_SECRET ?? 'dev-access-secret';
 const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET ?? 'dev-refresh-secret';
-const mongoUri = process.env.MONGODB_URI ?? '';
+const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || '';
 const rawCorsOrigin = process.env.CORS_ORIGIN;
 const corsOrigin = rawCorsOrigin ?? 'http://localhost:3000';
 

@@ -169,7 +169,7 @@ http://localhost:5001/api/docs
 | `PORT`                   |                  No | `5001`                                    | HTTP port                                                                                    |
 | `NODE_ENV`               |                  No | `development`                             | Runtime environment                                                                          |
 | `APP_URL`                | Yes in production\* | `http://localhost:5001` in `.env.example` | Public API URL used by Swagger; production also falls back to Render's `RENDER_EXTERNAL_URL` |
-| `MONGODB_URI`            |   Yes in production | empty                                     | MongoDB Atlas connection string                                                              |
+| `MONGODB_URI`            |   Yes in production | empty                                     | MongoDB Atlas connection string; `MONGO_URI` is also accepted as a compatibility alias       |
 | `MONGODB_TEST_URI`       |   Only for DB tests | empty                                     | Disposable MongoDB database used by the Mongo-backed auth integration suite                  |
 | `JWT_ACCESS_SECRET`      |   Yes in production | `dev-access-secret`                       | Access token signing secret                                                                  |
 | `JWT_REFRESH_SECRET`     |   Yes in production | `dev-refresh-secret`                      | Refresh token signing secret                                                                 |

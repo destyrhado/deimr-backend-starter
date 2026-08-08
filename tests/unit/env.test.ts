@@ -57,3 +57,18 @@ test('production config accepts explicit production-safe values', () => {
 
   assert.equal(result.status, 0);
 });
+
+test('production config accepts MONGO_URI as a MongoDB URI compatibility alias', () => {
+  const result = importEnv({
+    NODE_ENV: 'production',
+    APP_URL: '',
+    RENDER_EXTERNAL_URL: 'https://deimr-backend-starter.onrender.com',
+    MONGODB_URI: '',
+    MONGO_URI: 'mongodb://127.0.0.1:27017/deimr_backend_prod',
+    JWT_ACCESS_SECRET: 'a'.repeat(32),
+    JWT_REFRESH_SECRET: 'b'.repeat(32),
+    CORS_ORIGIN: 'https://example.test',
+  });
+
+  assert.equal(result.status, 0);
+});
