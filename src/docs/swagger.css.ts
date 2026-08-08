@@ -10,11 +10,6 @@ export const swaggerCustomCss = (_nodeEnv: string) => `
     padding: 10px 0;
   }
 
-  .swagger-ui .topbar a,
-  .swagger-ui .topbar svg {
-    display: none;
-  }
-
   .swagger-ui .wrapper,
   .swagger-ui .topbar .wrapper {
     max-width: 1626px;
