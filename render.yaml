@@ -3,7 +3,7 @@ services:
     name: deimr-backend-starter
     runtime: node
     plan: free
-    buildCommand: npm ci --include=dev && npm run build && npm prune --omit=dev
+    buildCommand: npm install && npm run build
     startCommand: npm run start
     healthCheckPath: /health
     envVars:

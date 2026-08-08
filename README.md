@@ -1,6 +1,6 @@
 # Deimr Backend Starter API
 
-![Node.js](https://img.shields.io/badge/Node.js-20.16%2B-339933?logo=node.js&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?logo=node.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
 ![Express.js](https://img.shields.io/badge/Express.js-Backend-black?logo=express)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)
@@ -332,13 +332,13 @@ The repository includes `render.yaml` for Render Blueprint deployment.
 
 Render configuration:
 
-| Setting           | Value                                                           |
-| ----------------- | --------------------------------------------------------------- |
-| Runtime           | Node                                                            |
-| Node version      | `22.x`                                                          |
-| Build command     | `npm ci --include=dev && npm run build && npm prune --omit=dev` |
-| Start command     | `npm run start`                                                 |
-| Health check path | `/health`                                                       |
+| Setting           | Value                          |
+| ----------------- | ------------------------------ |
+| Runtime           | Node                           |
+| Node version      | `22.x`                         |
+| Build command     | `npm install && npm run build` |
+| Start command     | `npm run start`                |
+| Health check path | `/health`                      |
 
 Production secrets are not committed. Configure these in Render:
 
@@ -349,7 +349,7 @@ Production secrets are not committed. Configure these in Render:
 
 `APP_URL` is optional on Render because the app falls back to Render's `RENDER_EXTERNAL_URL`. Set `APP_URL` only when using a custom domain or non-Render host.
 
-If configuring Render from the dashboard instead of `render.yaml`, use the exact build command above. A plain `npm install && npm run build` can fail when Render omits dev dependencies during production builds, because TypeScript and `@types/node` are build-time dependencies.
+The build command matches the current Render dashboard command. TypeScript and the type packages needed by `tsc` are listed under production dependencies so Render can compile even when dev dependencies are omitted during production builds.
 
 ## Security Notes
 
