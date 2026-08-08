@@ -5,9 +5,7 @@ export const swaggerCustomCss = (_nodeEnv: string) => `
   }
 
   .swagger-ui .topbar {
-    background: #1b1b1b;
-    box-shadow: none;
-    padding: 10px 0;
+    display: none;
   }
 
   .swagger-ui .wrapper,
