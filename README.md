@@ -76,6 +76,15 @@ Responsibilities are split by layer:
 - `docs`: Swagger/OpenAPI definition and Swagger UI styling
 - `validators`: request payload validation
 
+## Architectural Decisions
+
+- The layered structure keeps HTTP concerns, application rules, and persistence code separate, which makes auth-sensitive behavior easier to test and review.
+- JWT access tokens keep authenticated requests stateless, while persisted refresh tokens allow rotation, expiry checks, and logout-based revocation.
+- MongoDB Atlas with Mongoose fits the document-shaped user and refresh-token data model while keeping local setup and hosted deployment straightforward.
+- Validation and error handling are centralized so clients receive consistent response shapes with request IDs across public and protected endpoints.
+- Swagger/OpenAPI is treated as part of the API contract, with tests that keep documented endpoints, schemas, examples, and runtime behavior aligned.
+- Docker, GitHub Actions, and Render were chosen to make the project easy to run locally, verify in CI, and expose through a public production URL.
+
 ## Project Structure
 
 ```text
@@ -350,6 +359,14 @@ Production secrets are not committed. Configure these in Render:
 `APP_URL` is optional on Render because the app falls back to Render's `RENDER_EXTERNAL_URL`. Set `APP_URL` only when using a custom domain or non-Render host.
 
 The build command matches the current Render dashboard command. TypeScript and the type packages needed by `tsc` are listed under production dependencies so Render can compile even when dev dependencies are omitted during production builds.
+
+## Future Improvements
+
+- Add a deployed smoke-test workflow that verifies the live Render URL and Swagger UI after each successful deploy.
+- Add structured audit events for login, refresh-token rotation, logout, role changes, and admin user management.
+- Expand integration coverage with an isolated MongoDB test database for registration, login, refresh, and user-management flows.
+- Expose a machine-readable OpenAPI JSON endpoint for external tooling in addition to the Swagger UI.
+- Add production observability hooks for metrics, uptime alerts, and centralized log shipping.
 
 ## Security Notes
 
