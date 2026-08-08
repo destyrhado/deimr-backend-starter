@@ -10,7 +10,7 @@
 ![GitHub Actions](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?logo=githubactions&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
-Production-oriented REST API starter built with Node.js, TypeScript, Express, MongoDB Atlas, JWT access/refresh tokens, RBAC, Swagger/OpenAPI, Docker, GitHub Actions, and Render.
+Production-oriented REST API starter built with Node.js, TypeScript, Express, MongoDB Atlas, JWT access/refresh tokens, RBAC, Swagger/OpenAPI, runtime metrics, Docker, GitHub Actions, and Render.
 
 This repository is an independent public reference inspired by backend practices used while building Deimr. It does not contain Deimr production source code, proprietary business logic, private infrastructure, credentials, or customer data.
 
@@ -20,6 +20,7 @@ This repository is an independent public reference inspired by backend practices
 | ------------ | ----------------------------------------------------- |
 | API root     | `https://deimr-backend-starter.onrender.com`          |
 | Health check | `https://deimr-backend-starter.onrender.com/health`   |
+| Metrics      | `https://deimr-backend-starter.onrender.com/metrics`  |
 | Swagger UI   | `https://deimr-backend-starter.onrender.com/api/docs` |
 
 The live service is hosted on Render. The repository includes `render.yaml`; production secrets are configured in Render, not committed to GitHub.
@@ -32,6 +33,7 @@ The live service is hosted on Render. The repository includes `render.yaml`; pro
 - MongoDB Atlas with Mongoose
 - JWT authentication with refresh token rotation and revocation
 - Swagger UI with OpenAPI 3.0.3
+- Prometheus-style process metrics
 - Docker and Docker Compose
 - GitHub Actions CI
 - ESLint and Prettier
@@ -39,8 +41,8 @@ The live service is hosted on Render. The repository includes `render.yaml`; pro
 ## Implemented Features
 
 - Public registration, login, token refresh, and logout
-- JWT Bearer authentication
-- Refresh token persistence, rotation, expiry checks, and revocation
+- JWT Bearer authentication with HMAC-hashed refresh token persistence
+- Refresh token rotation, expiry checks, logout revocation, and token-family reuse detection
 - Role-based access control for `USER`, `ADMIN`, and `SUPER_ADMIN`
 - User profile read/update endpoints
 - Admin user list/read/update/delete endpoints
@@ -49,11 +51,11 @@ The live service is hosted on Render. The repository includes `render.yaml`; pro
 - Request validation with consistent validation error payloads
 - Centralized error handling with request IDs
 - Helmet, CORS, rate limiting, and HTTP request logging
+- Prometheus-style HTTP request metrics at `/metrics`
 - Swagger/OpenAPI documentation and contract tests
-- Unit and integration tests using `node:test`
-- Docker image and Docker Compose local runtime
-- Render Blueprint deployment config
-- GitHub Actions CI for lint, format, tests, and build
+- Unit, integration, and Mongo-backed auth-flow tests using `node:test`
+- Docker, Docker Compose, GitHub Actions CI, and Render deployment config
+- Live deployment smoke-test workflow
 
 ## Architecture
 
@@ -79,17 +81,25 @@ Responsibilities are split by layer:
 ## Architectural Decisions
 
 - The layered structure keeps HTTP concerns, application rules, and persistence code separate, which makes auth-sensitive behavior easier to test and review.
-- JWT access tokens keep authenticated requests stateless, while persisted refresh tokens allow rotation, expiry checks, and logout-based revocation.
+- Controllers stay thin and delegate authorization-sensitive behavior to services, where it can be exercised without depending on Express internals.
+- Repositories isolate Mongoose access so query construction, pagination, and token persistence do not leak across controllers and services.
+- JWT access tokens keep authenticated requests stateless, while persisted refresh-token digests allow rotation, expiry checks, and logout-based revocation.
 - MongoDB Atlas with Mongoose fits the document-shaped user and refresh-token data model while keeping local setup and hosted deployment straightforward.
-- Validation and error handling are centralized so clients receive consistent response shapes with request IDs across public and protected endpoints.
+
+## Engineering Decisions
+
+- Node 22, TypeScript, and ESM are used consistently across local development, CI, Docker, and Render.
+- The project uses Node's built-in `node:test` runner to keep the test stack small while still covering unit, integration, RBAC, and OpenAPI contract behavior.
 - Swagger/OpenAPI is treated as part of the API contract, with tests that keep documented endpoints, schemas, examples, and runtime behavior aligned.
-- Docker, GitHub Actions, and Render were chosen to make the project easy to run locally, verify in CI, and expose through a public production URL.
+- Validation and error handling are centralized so clients receive consistent response shapes with request IDs across public and protected endpoints.
+- TypeScript and required type packages are production dependencies because the current Render build command compiles during deployment with `npm install && npm run build`.
+- CI verifies linting, formatting, tests, TypeScript compilation, and Docker image construction before code is considered shippable.
 
 ## Project Structure
 
 ```text
 deimr-backend-starter/
-├── .github/workflows/ci.yml
+├── .github/workflows/
 ├── src/
 │   ├── config/
 │   ├── constants/
@@ -149,6 +159,7 @@ http://localhost:5001/api/docs
 | `NODE_ENV`               |                  No | `development`                             | Runtime environment                                                                          |
 | `APP_URL`                |                  No | `http://localhost:5001` in `.env.example` | Public API URL used by Swagger; production also falls back to Render's `RENDER_EXTERNAL_URL` |
 | `MONGODB_URI`            | Yes for persistence | empty                                     | MongoDB Atlas connection string                                                              |
+| `MONGODB_TEST_URI`       |   Only for DB tests | empty                                     | Disposable MongoDB database used by the Mongo-backed auth integration suite                  |
 | `JWT_ACCESS_SECRET`      |   Yes in production | `dev-access-secret`                       | Access token signing secret                                                                  |
 | `JWT_REFRESH_SECRET`     |   Yes in production | `dev-refresh-secret`                      | Refresh token signing secret                                                                 |
 | `JWT_ACCESS_EXPIRES_IN`  |                  No | `15m`                                     | Access token lifetime                                                                        |
@@ -179,6 +190,7 @@ http://localhost:5001/api/docs
 | -------- | ------------------------ | ---- | ------------------------------ | ------------------------------------------------------------------------------------- |
 | `GET`    | `/`                      | No   | Public                         | API root status message                                                               |
 | `GET`    | `/health`                | No   | Public                         | Service health payload                                                                |
+| `GET`    | `/metrics`               | No   | Public                         | Prometheus-style process metrics                                                      |
 | `GET`    | `/api/docs`              | No   | Public                         | Swagger UI                                                                            |
 | `POST`   | `/api/v1/auth/register`  | No   | Public                         | Register a `USER` account                                                             |
 | `POST`   | `/api/v1/auth/login`     | No   | Public                         | Login and receive access/refresh tokens                                               |
@@ -298,10 +310,13 @@ Tests use Node's built-in `node:test` runner.
 Current test coverage includes:
 
 - `/health` unit and integration behavior
+- Mongo-backed registration, login, profile, refresh rotation, refresh-token reuse detection, and logout behavior
 - OpenAPI path/schema/query contract checks
 - Documented unauthenticated endpoint behavior
 - RBAC middleware behavior
 - User list pagination/search/filter/sort logic
+
+`MONGODB_TEST_URI` must point at a disposable database whose name includes `test`; the integration suite drops that database before and after the Mongo-backed auth test. GitHub Actions provides this through a MongoDB service container.
 
 GitHub Actions runs on pushes to `main` and pull requests:
 
@@ -313,6 +328,8 @@ npm test
 npm run build
 docker build -t deimr-backend-starter .
 ```
+
+The live smoke-test workflow runs after successful CI on `main` and can also be triggered manually. It verifies the deployed Render root, health, metrics, and Swagger surfaces.
 
 ## Docker
 
@@ -362,19 +379,20 @@ The build command matches the current Render dashboard command. TypeScript and t
 
 ## Future Improvements
 
-- Add a deployed smoke-test workflow that verifies the live Render URL and Swagger UI after each successful deploy.
 - Add structured audit events for login, refresh-token rotation, logout, role changes, and admin user management.
-- Expand integration coverage with an isolated MongoDB test database for registration, login, refresh, and user-management flows.
+- Add per-user session management so users can revoke individual active sessions.
 - Expose a machine-readable OpenAPI JSON endpoint for external tooling in addition to the Swagger UI.
-- Add production observability hooks for metrics, uptime alerts, and centralized log shipping.
+- Add production observability hooks for metrics scraping, uptime alerts, and centralized log shipping.
+- Add a privileged admin bootstrap path or seed workflow for non-public admin account creation.
 
 ## Security Notes
 
 - Passwords are hashed with bcrypt before storage.
-- JWT access and refresh secrets must be strong production values.
-- Refresh tokens are stored, rotated on refresh, and revocable on logout.
+- JWT access and refresh secrets must be strong production values and must not use the development defaults.
+- Refresh tokens are returned to clients only at login/refresh time; the database stores HMAC-SHA256 token digests for lookup, rotation, revocation, and token-family reuse detection.
 - Protected routes require Bearer tokens and role checks.
-- Password hashes, JWT secrets, refresh tokens, and MongoDB credentials are not returned in API responses.
+- Helmet, CORS, and rate limiting are enabled globally.
+- Password hashes, JWT secrets, stored token digests, and MongoDB credentials are not returned in API responses.
 - `.env`, `node_modules`, `dist`, and coverage output are excluded from Git.
 
 ## About Deimr

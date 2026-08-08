@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt, { type SignOptions } from 'jsonwebtoken';
 import { env } from '../config/env.js';
@@ -12,6 +13,21 @@ const getTokenExpiry = (token: string): Date => {
     return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   }
   return new Date(decoded.exp * 1000);
+};
+
+type RefreshPayload = AuthPayload & {
+  tokenFamilyId: string;
+  jti: string;
+};
+
+const assertRefreshPayload = (payload: AuthPayload): RefreshPayload => {
+  const refreshPayload = payload as Partial<RefreshPayload>;
+
+  if (!refreshPayload.tokenFamilyId || !refreshPayload.jti) {
+    throw createHttpError(401, 'Refresh token is invalid or expired');
+  }
+
+  return refreshPayload as RefreshPayload;
 };
 
 export class AuthService {
@@ -52,16 +68,17 @@ export class AuthService {
       role: user.role,
     };
     const accessToken = this.generateAccessToken(payload);
-    const refreshToken = this.generateRefreshToken(payload);
+    const refresh = this.generateRefreshToken(payload);
     await RefreshTokenRepository.create({
-      token: refreshToken,
+      token: refresh.token,
       userId: user._id.toString(),
-      expiresAt: getTokenExpiry(refreshToken),
+      tokenFamilyId: refresh.tokenFamilyId,
+      expiresAt: getTokenExpiry(refresh.token),
     });
 
     return {
       accessToken,
-      refreshToken,
+      refreshToken: refresh.token,
       user: {
         id: user._id.toString(),
         name: user.name,
@@ -76,18 +93,28 @@ export class AuthService {
 
   static async refresh(token: string) {
     const storedToken = await RefreshTokenRepository.findByToken(token);
-    if (
-      !storedToken ||
-      storedToken.revokedAt ||
-      storedToken.expiresAt <= new Date()
-    ) {
+    if (!storedToken || storedToken.expiresAt <= new Date()) {
       throw createHttpError(401, 'Refresh token is invalid or expired');
     }
+    if (storedToken.revokedAt) {
+      await RefreshTokenRepository.markFamilyReuseDetected(
+        storedToken.tokenFamilyId,
+      );
+      throw createHttpError(401, 'Refresh token reuse detected');
+    }
 
-    let payload: AuthPayload;
+    let payload: RefreshPayload;
     try {
-      payload = jwt.verify(token, env.jwtRefreshSecret) as AuthPayload;
+      payload = assertRefreshPayload(
+        jwt.verify(token, env.jwtRefreshSecret) as AuthPayload,
+      );
     } catch {
+      throw createHttpError(401, 'Refresh token is invalid or expired');
+    }
+    if (
+      storedToken.userId !== payload.sub ||
+      storedToken.tokenFamilyId !== payload.tokenFamilyId
+    ) {
       throw createHttpError(401, 'Refresh token is invalid or expired');
     }
 
@@ -101,22 +128,26 @@ export class AuthService {
       email: payload.email,
       role: payload.role,
     });
-    const refreshToken = this.generateRefreshToken({
-      sub: payload.sub,
-      email: payload.email,
-      role: payload.role,
-    });
+    const refresh = this.generateRefreshToken(
+      {
+        sub: payload.sub,
+        email: payload.email,
+        role: payload.role,
+      },
+      payload.tokenFamilyId,
+    );
 
-    await RefreshTokenRepository.revoke(token);
+    await RefreshTokenRepository.revoke(token, refresh.token);
     await RefreshTokenRepository.create({
-      token: refreshToken,
+      token: refresh.token,
       userId: payload.sub,
-      expiresAt: getTokenExpiry(refreshToken),
+      tokenFamilyId: refresh.tokenFamilyId,
+      expiresAt: getTokenExpiry(refresh.token),
     });
 
     return {
       accessToken,
-      refreshToken,
+      refreshToken: refresh.token,
       user: {
         id: user._id.toString(),
         name: user.name,
@@ -131,12 +162,14 @@ export class AuthService {
 
   static async logout(token: string) {
     const storedToken = await RefreshTokenRepository.findByToken(token);
-    if (
-      !storedToken ||
-      storedToken.revokedAt ||
-      storedToken.expiresAt <= new Date()
-    ) {
+    if (!storedToken || storedToken.expiresAt <= new Date()) {
       throw createHttpError(401, 'Refresh token is invalid or expired');
+    }
+    if (storedToken.revokedAt) {
+      await RefreshTokenRepository.markFamilyReuseDetected(
+        storedToken.tokenFamilyId,
+      );
+      throw createHttpError(401, 'Refresh token reuse detected');
     }
 
     await RefreshTokenRepository.revoke(token);
@@ -149,9 +182,21 @@ export class AuthService {
     });
   }
 
-  static generateRefreshToken(payload: AuthPayload) {
-    return jwt.sign(payload, env.jwtRefreshSecret, {
-      expiresIn: env.jwtRefreshExpiresIn as SignOptions['expiresIn'],
-    });
+  static generateRefreshToken(
+    payload: AuthPayload,
+    tokenFamilyId: string = randomUUID(),
+  ) {
+    const token = jwt.sign(
+      { ...payload, tokenFamilyId, jti: randomUUID() },
+      env.jwtRefreshSecret,
+      {
+        expiresIn: env.jwtRefreshExpiresIn as SignOptions['expiresIn'],
+      },
+    );
+
+    return {
+      token,
+      tokenFamilyId,
+    };
   }
 }

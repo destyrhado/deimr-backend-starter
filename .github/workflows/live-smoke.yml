@@ -1,0 +1,81 @@
+name: Live Smoke Test
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify live Render API
+        env:
+          LIVE_API_URL: https://deimr-backend-starter.onrender.com
+        run: |
+          node --input-type=module <<'NODE'
+          const baseUrl = process.env.LIVE_API_URL;
+          const attempts = 30;
+          const delayMs = 20_000;
+
+          const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+          const fetchText = async (path) => {
+            const response = await fetch(`${baseUrl}${path}`, {
+              headers: { Accept: '*/*' },
+            });
+            const body = await response.text();
+
+            if (!response.ok) {
+              throw new Error(`${path} returned ${response.status}: ${body.slice(0, 200)}`);
+            }
+
+            return { response, body };
+          };
+
+          let lastError;
+          for (let attempt = 1; attempt <= attempts; attempt += 1) {
+            try {
+              const root = JSON.parse((await fetchText('/')).body);
+              if (root.success !== true) {
+                throw new Error('Root endpoint did not return success=true');
+              }
+
+              const health = JSON.parse((await fetchText('/health')).body);
+              if (health.status !== 'ok' || health.service !== 'deimr-backend-starter') {
+                throw new Error(`Unexpected health payload: ${JSON.stringify(health)}`);
+              }
+
+              const metrics = (await fetchText('/metrics')).body;
+              if (!metrics.includes('deimr_http_requests_total')) {
+                throw new Error('Metrics endpoint did not include request counter');
+              }
+
+              const swagger = (await fetchText('/api/docs/swagger-ui-init.js')).body;
+              for (const marker of ['"RootResponse"', '"/metrics"', 'API root status returned']) {
+                if (!swagger.includes(marker)) {
+                  throw new Error(`Swagger is missing marker ${marker}`);
+                }
+              }
+              if (swagger.includes('"url": ""')) {
+                throw new Error('Swagger production server URL is empty');
+              }
+
+              console.log(`Live smoke test passed for ${baseUrl}`);
+              process.exit(0);
+            } catch (error) {
+              lastError = error;
+              console.log(`Attempt ${attempt}/${attempts} failed: ${error.message}`);
+              if (attempt < attempts) {
+                await sleep(delayMs);
+              }
+            }
+          }
+
+          throw lastError;
+          NODE

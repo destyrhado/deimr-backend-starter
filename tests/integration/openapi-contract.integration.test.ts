@@ -34,6 +34,16 @@ test('documented endpoints are mounted and return documented error/health shapes
     'version',
   ]);
 
+  const metrics = await fetch(`${baseUrl}/metrics`);
+  const metricsBody = await metrics.text();
+  assert.equal(metrics.status, 200);
+  assert.equal(
+    metrics.headers.get('content-type')?.includes('text/plain'),
+    true,
+  );
+  assert.equal(metricsBody.includes('deimr_http_requests_total'), true);
+  assert.equal(metricsBody.includes('deimr_http_responses_total'), true);
+
   const publicInvalidRequests = [
     ['/api/v1/auth/register', {}],
     ['/api/v1/auth/login', {}],

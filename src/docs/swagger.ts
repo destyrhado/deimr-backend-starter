@@ -21,6 +21,18 @@ const jsonResponse = (
   },
 });
 
+const textResponse = (description: string, example: string) => ({
+  description,
+  content: {
+    'text/plain': {
+      schema: {
+        type: 'string',
+        example,
+      },
+    },
+  },
+});
+
 const serverUrl =
   env.nodeEnv === 'production' ? env.appUrl : `http://localhost:${env.port}`;
 
@@ -485,7 +497,7 @@ const swaggerDefinition = {
         },
       ),
       InvalidRefreshToken: jsonResponse(
-        'Refresh token is invalid, expired, revoked, or not stored by the API.',
+        'Refresh token is invalid, expired, revoked, reused, or not stored by the API.',
         'ErrorResponse',
         {
           invalidRefreshToken: {
@@ -592,6 +604,26 @@ const swaggerDefinition = {
         },
       },
     },
+    '/metrics': {
+      get: {
+        tags: ['System'],
+        summary: 'Get process metrics.',
+        description:
+          'Returns Prometheus-style HTTP request counters for lightweight runtime observability.',
+        responses: {
+          '200': textResponse(
+            'Metrics returned in text/plain format.',
+            [
+              '# HELP deimr_http_requests_total Total HTTP responses served by this process.',
+              '# TYPE deimr_http_requests_total counter',
+              'deimr_http_requests_total 42',
+            ].join('\n'),
+          ),
+          '429': { $ref: responseRef('TooManyRequests') },
+          '500': { $ref: responseRef('ServerError') },
+        },
+      },
+    },
     '/api/v1/auth/register': {
       post: {
         tags: ['Authentication'],
@@ -692,7 +724,7 @@ const swaggerDefinition = {
         tags: ['Authentication'],
         summary: 'Refresh access and refresh tokens.',
         description:
-          'Public endpoint. Requires a stored, unexpired, unrevoked refresh token returned by login or refresh.',
+          'Public endpoint. Requires a stored, unexpired, unrevoked refresh token returned by login or refresh. Reusing a rotated token revokes the token family.',
         requestBody: {
           required: true,
           content: {

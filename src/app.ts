@@ -13,12 +13,14 @@ import { apiRateLimiter } from './middleware/rateLimiter.js';
 import { logger } from './config/logger.js';
 import { requestContext } from './middleware/requestContext.js';
 import { API_VERSION, SERVICE_NAME } from './constants/api.js';
+import { metricsHandler, metricsMiddleware } from './middleware/metrics.js';
 
 const app = express();
 
 app.use(helmet());
 app.use(cors({ origin: env.corsOrigin, credentials: true }));
 app.use(requestContext);
+app.use(metricsMiddleware);
 morgan.token('request-id', (req) => (req as Request).id ?? '-');
 app.use(
   morgan(
@@ -42,6 +44,8 @@ app.get('/health', (_req: Request, res: Response) => {
     uptime: process.uptime(),
   });
 });
+
+app.get('/metrics', metricsHandler);
 
 app.use(
   '/api/docs',

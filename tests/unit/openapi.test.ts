@@ -17,6 +17,7 @@ test('OpenAPI exposes only mounted API endpoints with reusable schemas', () => {
     '/api/v1/users/{id}',
     '/api/v1/users/{id}/role',
     '/health',
+    '/metrics',
   ]);
 
   for (const schema of [
@@ -34,6 +35,11 @@ test('OpenAPI exposes only mounted API endpoints with reusable schemas', () => {
   assert.equal(spec.components.securitySchemes.bearerAuth.type, 'http');
   assert.equal(spec.components.securitySchemes.bearerAuth.scheme, 'bearer');
   assert.equal(spec.servers[0].url, 'http://localhost:5001');
+  assert.equal(
+    spec.paths['/metrics'].get.responses['200'].content['text/plain'].schema
+      .type,
+    'string',
+  );
   assert.equal(
     JSON.stringify(spec).includes('deimr-backend-starter.onrender.com'),
     false,
