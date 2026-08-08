@@ -10,10 +10,10 @@ export class RefreshTokenRepository {
   }
 
   static async revoke(token: string) {
-    return RefreshToken.findOneAndUpdate({ token }, { revokedAt: new Date() }, { new: true });
-  }
-
-  static async deleteByToken(token: string) {
-    return RefreshToken.findOneAndDelete({ token });
+    return RefreshToken.findOneAndUpdate(
+      { token },
+      { revokedAt: new Date() },
+      { new: true },
+    );
   }
 }

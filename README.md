@@ -1,1065 +1,381 @@
 # Deimr Backend Starter API
 
-![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-20.16%2B-339933?logo=node.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
 ![Express.js](https://img.shields.io/badge/Express.js-Backend-black?logo=express)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)
-![Swagger](https://img.shields.io/badge/Swagger-OpenAPI-85EA2D?logo=swagger&logoColor=black)
+![Swagger](https://img.shields.io/badge/Swagger-OpenAPI_3.0-85EA2D?logo=swagger&logoColor=black)
 ![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker&logoColor=white)
-![Render](https://img.shields.io/badge/Render-Deploy-46E3B7?logo=render&logoColor=white)
+![Render](https://img.shields.io/badge/Render-Deployed-46E3B7?logo=render&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?logo=githubactions&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
-A production-ready backend starter built with **Node.js**, **TypeScript**, **Express.js**, and **MongoDB Atlas**.
+Production-oriented REST API starter built with Node.js, TypeScript, Express, MongoDB Atlas, JWT access/refresh tokens, RBAC, Swagger/OpenAPI, Docker, GitHub Actions, and Render.
 
-I created this project as a reusable foundation for building secure, scalable, and maintainable REST APIs. It reflects the architecture, coding standards, and engineering practices I follow when developing production backend services.
+This repository is an independent public reference inspired by backend practices used while building Deimr. It does not contain Deimr production source code, proprietary business logic, private infrastructure, credentials, or customer data.
 
-Although inspired by the engineering practices used while building **Deimr**, this repository is completely independent and does **not** contain Deimr's production code, proprietary business logic, private infrastructure, credentials, or customer data.
+## Live Deployment
 
----
+| Surface      | URL                                                   |
+| ------------ | ----------------------------------------------------- |
+| API root     | `https://deimr-backend-starter.onrender.com`          |
+| Health check | `https://deimr-backend-starter.onrender.com/health`   |
+| Swagger UI   | `https://deimr-backend-starter.onrender.com/api/docs` |
+
+The live service is hosted on Render. The repository includes `render.yaml`; production secrets are configured in Render, not committed to GitHub.
 
 ## Tech Stack
 
-- Node.js
-- TypeScript
-- Express.js
-- MongoDB Atlas
-- Mongoose
-- JWT Authentication
-- Swagger / OpenAPI
-- Docker
-- Render
-- GitHub Actions
-- ESLint
-- Prettier
+- Node.js 20.16+; CI, Docker, and Render are configured for Node.js 22
+- TypeScript 5
+- Express 4
+- MongoDB Atlas with Mongoose
+- JWT authentication with refresh token rotation and revocation
+- Swagger UI with OpenAPI 3.0.3
+- Docker and Docker Compose
+- GitHub Actions CI
+- ESLint and Prettier
 
----
+## Implemented Features
 
-## Features
-
-The project is designed to support production-oriented backend functionality including:
-
-- User Registration
-- User Login
-- JWT Access Token Authentication
-- Refresh Token Authentication
-- Role-Based Access Control (RBAC)
-- RESTful API Architecture
-- API Versioning
-- Request Validation
-- Centralized Error Handling
-- Structured Logging
-- Environment-Based Configuration
-- Swagger API Documentation
-- Health Check Endpoint
-- Pagination
-- Filtering
-- Sorting
-- Docker Support
-- Automated Testing
-- CI/CD Pipeline
-
-> Features should be marked as implemented only after the corresponding code has been added to the repository.
-
----
+- Public registration, login, token refresh, and logout
+- JWT Bearer authentication
+- Refresh token persistence, rotation, expiry checks, and revocation
+- Role-based access control for `USER`, `ADMIN`, and `SUPER_ADMIN`
+- User profile read/update endpoints
+- Admin user list/read/update/delete endpoints
+- Super admin role update endpoint
+- Pagination, search, role filtering, status filtering, and whitelisted sorting for user lists
+- Request validation with consistent validation error payloads
+- Centralized error handling with request IDs
+- Helmet, CORS, rate limiting, and HTTP request logging
+- Swagger/OpenAPI documentation and contract tests
+- Unit and integration tests using `node:test`
+- Docker image and Docker Compose local runtime
+- Render Blueprint deployment config
+- GitHub Actions CI for lint, format, tests, and build
 
 ## Architecture
 
-The project follows a layered backend architecture designed to keep application responsibilities separated and maintainable.
-
 ```text
-Client
-   │
-   ▼
 Routes
-   │
-   ▼
-Controllers
-   │
-   ▼
-Services
-   │
-   ▼
-Repositories
-   │
-   ▼
-MongoDB Atlas
+  -> Controllers
+  -> Services
+  -> Repositories
+  -> MongoDB Atlas
 ```
 
-### Layer Responsibilities
+Responsibilities are split by layer:
 
-**Routes**
-
-Define application endpoints and connect HTTP requests to controllers.
-
-**Controllers**
-
-Handle requests and responses while keeping business logic outside the HTTP layer.
-
-**Services**
-
-Contain application and business logic.
-
-**Repositories**
-
-Handle database access and isolate persistence logic from the service layer.
-
-**Models**
-
-Define MongoDB schemas and application data structures.
-
-**Middleware**
-
-Handles authentication, authorization, validation, security, logging, and errors.
-
----
+- `routes`: endpoint registration and middleware wiring
+- `controllers`: HTTP request/response handling
+- `services`: application logic and authorization-sensitive business rules
+- `repositories`: MongoDB persistence operations
+- `models`: Mongoose schemas
+- `middleware`: authentication, authorization, request IDs, rate limiting, and errors
+- `docs`: Swagger/OpenAPI definition and Swagger UI styling
+- `validators`: request payload validation
 
 ## Project Structure
 
 ```text
 deimr-backend-starter/
-│
+├── .github/workflows/ci.yml
 ├── src/
 │   ├── config/
-│   │
+│   ├── constants/
 │   ├── controllers/
-│   │
 │   ├── docs/
-│   │   ├── openapi.ts
-│   │   └── swagger.ts
-│   │
 │   ├── middleware/
-│   │
 │   ├── models/
-│   │
 │   ├── repositories/
-│   │
 │   ├── routes/
-│   │
 │   ├── services/
-│   │
 │   ├── types/
-│   │
 │   ├── utils/
-│   │
 │   ├── validators/
-│   │
 │   ├── app.ts
 │   └── server.ts
-│
 ├── tests/
 │   ├── integration/
 │   └── unit/
-│
-├── .github/
-│   └── workflows/
-│       └── ci.yml
-│
+├── .dockerignore
 ├── .env.example
-├── .gitignore
 ├── Dockerfile
 ├── docker-compose.yml
-├── eslint.config.js
+├── render.yaml
 ├── package.json
-├── prettier.config.js
+├── package-lock.json
 ├── tsconfig.json
-├── LICENSE
 └── README.md
 ```
 
----
-
-## Getting Started
-
-### Clone the repository
+## Local Setup
 
 ```bash
 git clone https://github.com/destyrhado/deimr-backend-starter.git
-```
-
-Move into the project directory:
-
-```bash
 cd deimr-backend-starter
-```
-
-### Install dependencies
-
-```bash
 npm install
-```
-
-### Configure environment variables
-
-Create a local `.env` file from the example:
-
-```bash
 cp .env.example .env
-```
-
-Update `.env` with your local configuration.
-
-Example:
-
-```env
-PORT=5001
-
-NODE_ENV=development
-
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/deimr_backend_starter
-
-JWT_ACCESS_SECRET=your_access_token_secret
-
-JWT_REFRESH_SECRET=your_refresh_token_secret
-
-JWT_ACCESS_EXPIRES_IN=15m
-
-JWT_REFRESH_EXPIRES_IN=7d
-```
-
-Never commit production credentials or real secrets to source control.
-
----
-
-## Running the Application
-
-### Development
-
-```bash
 npm run dev
 ```
 
-The API will be available at:
+Default local API URL:
 
 ```text
 http://localhost:5001
 ```
 
-### Build
-
-```bash
-npm run build
-```
-
-### Production
-
-```bash
-npm run start
-```
-
----
-
-## Available Scripts
-
-| Command | Description |
-|---|---|
-| `npm run dev` | Start the development server |
-| `npm run build` | Compile the TypeScript application |
-| `npm run start` | Run the production build |
-| `npm test` | Execute unit and integration tests |
-| `npm run test:coverage` | Generate test coverage |
-| `npm run lint` | Run ESLint |
-| `npm run lint:fix` | Fix supported ESLint issues |
-| `npm run format` | Format source code using Prettier |
-
----
-
-## API Versioning
-
-Application routes are versioned under:
+Local Swagger UI:
 
 ```text
-/api/v1
+http://localhost:5001/api/docs
 ```
 
-This allows future API versions to be introduced without breaking existing clients.
+## Environment Variables
 
----
+| Variable                 |            Required | Default in code/example                   | Purpose                                                                                      |
+| ------------------------ | ------------------: | ----------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `PORT`                   |                  No | `5001`                                    | HTTP port                                                                                    |
+| `NODE_ENV`               |                  No | `development`                             | Runtime environment                                                                          |
+| `APP_URL`                |                  No | `http://localhost:5001` in `.env.example` | Public API URL used by Swagger; production also falls back to Render's `RENDER_EXTERNAL_URL` |
+| `MONGODB_URI`            | Yes for persistence | empty                                     | MongoDB Atlas connection string                                                              |
+| `JWT_ACCESS_SECRET`      |   Yes in production | `dev-access-secret`                       | Access token signing secret                                                                  |
+| `JWT_REFRESH_SECRET`     |   Yes in production | `dev-refresh-secret`                      | Refresh token signing secret                                                                 |
+| `JWT_ACCESS_EXPIRES_IN`  |                  No | `15m`                                     | Access token lifetime                                                                        |
+| `JWT_REFRESH_EXPIRES_IN` |                  No | `7d`                                      | Refresh token lifetime                                                                       |
+| `CORS_ORIGIN`            |                  No | `http://localhost:3000`                   | Allowed browser origin                                                                       |
+| `RATE_LIMIT_WINDOW_MS`   |                  No | `900000`                                  | Rate limit window                                                                            |
+| `RATE_LIMIT_MAX`         |                  No | `100`                                     | Requests allowed per window per IP                                                           |
+
+## Scripts
+
+| Command                 | What it does                                              |
+| ----------------------- | --------------------------------------------------------- |
+| `npm run dev`           | Starts the development server with `tsx watch`            |
+| `npm run build`         | Compiles TypeScript to `dist/`                            |
+| `npm run start`         | Runs `dist/server.js`                                     |
+| `npm run serve`         | Alias for `npm run start`                                 |
+| `npm test`              | Runs unit and integration tests                           |
+| `npm run test:coverage` | Runs `node:test` with Node's experimental coverage output |
+| `npm run lint`          | Runs ESLint                                               |
+| `npm run lint:fix`      | Runs ESLint with autofix                                  |
+| `npm run format`        | Formats files with Prettier                               |
+| `npm run format:check`  | Checks formatting with Prettier                           |
+| `npm run ci`            | Runs lint, format check, tests, and build locally         |
 
 ## API Endpoints
 
-### Authentication
+| Method   | Path                     | Auth | Roles                          | Description                                                                           |
+| -------- | ------------------------ | ---- | ------------------------------ | ------------------------------------------------------------------------------------- |
+| `GET`    | `/`                      | No   | Public                         | API root status message                                                               |
+| `GET`    | `/health`                | No   | Public                         | Service health payload                                                                |
+| `GET`    | `/api/docs`              | No   | Public                         | Swagger UI                                                                            |
+| `POST`   | `/api/v1/auth/register`  | No   | Public                         | Register a `USER` account                                                             |
+| `POST`   | `/api/v1/auth/login`     | No   | Public                         | Login and receive access/refresh tokens                                               |
+| `POST`   | `/api/v1/auth/refresh`   | No   | Public                         | Rotate refresh token and issue new tokens                                             |
+| `POST`   | `/api/v1/auth/logout`    | No   | Public                         | Revoke a refresh token                                                                |
+| `GET`    | `/api/v1/users/me`       | Yes  | `USER`, `ADMIN`, `SUPER_ADMIN` | Get authenticated profile                                                             |
+| `PATCH`  | `/api/v1/users/me`       | Yes  | `USER`, `ADMIN`, `SUPER_ADMIN` | Update authenticated profile fields                                                   |
+| `GET`    | `/api/v1/users`          | Yes  | `ADMIN`, `SUPER_ADMIN`         | List users with pagination/search/filter/sort                                         |
+| `GET`    | `/api/v1/users/:id`      | Yes  | `ADMIN`, `SUPER_ADMIN`         | Get a user by MongoDB ObjectId                                                        |
+| `PATCH`  | `/api/v1/users/:id`      | Yes  | `ADMIN`, `SUPER_ADMIN`         | Update user fields except role                                                        |
+| `DELETE` | `/api/v1/users/:id`      | Yes  | `ADMIN`, `SUPER_ADMIN`         | Delete a user; self-delete is rejected                                                |
+| `PATCH`  | `/api/v1/users/:id/role` | Yes  | `SUPER_ADMIN`                  | Update a user's role; self-role changes and demoting another super admin are rejected |
 
-#### Register
+### User List Query Parameters
 
-```http
-POST /api/v1/auth/register
-```
+`GET /api/v1/users` supports:
 
-#### Login
+| Query    | Default      | Notes                                                                                            |
+| -------- | ------------ | ------------------------------------------------------------------------------------------------ |
+| `page`   | `1`          | Integer greater than or equal to 1                                                               |
+| `limit`  | `20`         | Integer from 1 to 100                                                                            |
+| `search` | none         | Case-insensitive search across name and email                                                    |
+| `role`   | none         | `USER`, `ADMIN`, or `SUPER_ADMIN`; lowercase input is normalized                                 |
+| `status` | none         | `ACTIVE`, `INACTIVE`, or `SUSPENDED`; lowercase input is normalized                              |
+| `sort`   | `-createdAt` | One of `name`, `email`, `role`, `status`, `createdAt`, `updatedAt`, optionally prefixed with `-` |
 
-```http
-POST /api/v1/auth/login
-```
+## Response Shapes
 
-#### Refresh Token
-
-```http
-POST /api/v1/auth/refresh
-```
-
-#### Logout
-
-```http
-POST /api/v1/auth/logout
-```
-
----
-
-### Users
-
-#### List Users
-
-```http
-GET /api/v1/users
-```
-
-#### Get User
-
-```http
-GET /api/v1/users/:id
-```
-
-#### Update User
-
-```http
-PATCH /api/v1/users/:id
-```
-
-#### Delete User
-
-```http
-DELETE /api/v1/users/:id
-```
-
----
-
-## Health Check
-
-```http
-GET /health
-```
-
-Example response:
+Health response:
 
 ```json
 {
-  "success": true,
+  "service": "deimr-backend-starter",
+  "environment": "production",
+  "version": "1.0.0",
   "status": "ok",
-  "service": "deimr-backend-starter"
+  "uptime": 12.345
 }
 ```
 
-The health endpoint can be used by deployment platforms, monitoring tools, and load balancers to verify that the application is running.
-
----
-
-## Example Success Response
+Success response:
 
 ```json
 {
   "success": true,
-  "message": "User registered successfully.",
+  "message": "Login successful",
   "data": {
-    "id": "66b5e7d5",
-    "email": "john@example.com"
-  }
-}
-```
-
----
-
-## Example Error Response
-
-```json
-{
-  "success": false,
-  "statusCode": 401,
-  "message": "Unauthorized"
-}
-```
-
-Consistent response structures make the API easier to integrate with frontend applications and external services.
-
----
-
-## Swagger API Documentation
-
-The API includes interactive **OpenAPI 3.0 documentation** using **Swagger UI**.
-
-Swagger allows developers to inspect and test endpoints directly from the browser without requiring Postman or another external API client.
-
-### Local Swagger
-
-Start the API:
-
-```bash
-npm run dev
-```
-
-Then open:
-
-```text
-http://localhost:5001/api/docs
-```
-
-### Production Swagger
-
-After deployment to Render:
-
-```text
-https://your-app.onrender.com/api/docs
-```
-
-Replace `your-app` with the actual Render service name.
-
-### Swagger Features
-
-- Interactive API Explorer
-- JWT Bearer Authentication
-- Request Schemas
-- Response Schemas
-- HTTP Status Codes
-- Endpoint Documentation
-- Try-It-Out API Testing
-- API Version Information
-- OpenAPI Specification
-
----
-
-## Using JWT Authentication in Swagger
-
-### 1. Register a user
-
-```http
-POST /api/v1/auth/register
-```
-
-### 2. Login
-
-```http
-POST /api/v1/auth/login
-```
-
-A successful login returns an access token.
-
-Example:
-
-```json
-{
-  "success": true,
-  "data": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-}
-```
-
-### 3. Open Swagger UI
-
-```text
-http://localhost:5001/api/docs
-```
-
-### 4. Click `Authorize`
-
-Enter:
-
-```text
-Bearer YOUR_ACCESS_TOKEN
-```
-
-### 5. Test Protected Endpoints
-
-Swagger will include the JWT token when calling protected routes.
-
----
-
-## Swagger Authentication Flow
-
-```text
-Register
-   │
-   ▼
-Login
-   │
-   ▼
-Receive JWT
-   │
-   ▼
-Open Swagger
-   │
-   ▼
-Authorize
-   │
-   ▼
-Test Protected Endpoints
-```
-
----
-
-## Swagger Installation
-
-```bash
-npm install swagger-ui-express swagger-jsdoc
-```
-
-TypeScript definitions:
-
-```bash
-npm install -D @types/swagger-ui-express
-```
-
----
-
-## Swagger Configuration Example
-
-```ts
-import swaggerJsdoc from "swagger-jsdoc";
-
-const swaggerOptions: swaggerJsdoc.Options = {
-  definition: {
-    openapi: "3.0.3",
-
-    info: {
-      title: "Deimr Backend Starter API",
-      version: "1.0.0",
-      description:
-        "A production-ready REST API built with Node.js, TypeScript, Express.js, and MongoDB Atlas."
-    },
-
-    servers: [
-      {
-        url: "http://localhost:5001",
-        description: "Local Development"
-      },
-      {
-        url: "https://your-app.onrender.com",
-        description: "Production"
-      }
-    ],
-
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT"
-        }
-      }
+    "accessToken": "<jwt-access-token>",
+    "refreshToken": "<jwt-refresh-token>",
+    "user": {
+      "id": "66b7f1a2c0a4f7b5f0d9a111",
+      "name": "Jane Doe",
+      "email": "jane@example.test",
+      "role": "USER",
+      "status": "ACTIVE",
+      "createdAt": "2026-08-08T00:00:00.000Z",
+      "updatedAt": "2026-08-08T00:00:00.000Z"
     }
   },
-
-  apis: [
-    "./src/routes/**/*.ts",
-    "./src/docs/**/*.ts"
-  ]
-};
-
-export const swaggerSpec = swaggerJsdoc(swaggerOptions);
-```
-
-Swagger UI can then be registered in the Express application:
-
-```ts
-import swaggerUi from "swagger-ui-express";
-import { swaggerSpec } from "./docs/swagger";
-
-app.use(
-  "/api/docs",
-  swaggerUi.serve,
-  swaggerUi.setup(swaggerSpec)
-);
-```
-
----
-
-## Authentication
-
-Authentication uses JWT access and refresh tokens.
-
-Example authorization header:
-
-```http
-Authorization: Bearer <access_token>
-```
-
-The authentication layer is designed to support:
-
-- Short-lived Access Tokens
-- Refresh Tokens
-- Protected Routes
-- Role-Based Authorization
-- Token Revocation
-- Refresh Token Rotation
-
----
-
-## Role-Based Access Control
-
-Application permissions can be controlled using roles.
-
-Example:
-
-```text
-USER
-ADMIN
-SUPER_ADMIN
-```
-
-A route can require a specific role before allowing access.
-
-Example:
-
-```text
-GET /api/v1/users
-Required Role: ADMIN
-```
-
----
-
-## Security
-
-The project is designed to use common backend security practices including:
-
-- JWT Authentication
-- Refresh Tokens
-- Password Hashing with bcrypt
-- Role-Based Access Control
-- Request Validation
-- Helmet Security Headers
-- CORS Configuration
-- Rate Limiting
-- Environment Variable Protection
-- Centralized Error Handling
-- Secure Password Storage
-- Protected Routes
-
-Security-sensitive data should never be returned in API responses or written to logs.
-
----
-
-## Validation
-
-Incoming requests should be validated before reaching application business logic.
-
-Example input:
-
-```json
-{
-  "email": "john@example.com",
-  "password": "StrongPassword123\!"
+  "statusCode": 200
 }
 ```
 
-Invalid requests should return predictable errors.
+Error response:
 
 ```json
 {
   "success": false,
+  "message": "Unauthorized",
+  "statusCode": 401,
+  "requestId": "7a0f8a9e-2c18-41e7-8b0b-37ef5b83e823"
+}
+```
+
+Validation error response:
+
+```json
+{
+  "success": false,
+  "message": "Invalid login data",
   "statusCode": 400,
-  "message": "Validation failed"
+  "requestId": "7a0f8a9e-2c18-41e7-8b0b-37ef5b83e823",
+  "errors": [
+    {
+      "field": "email",
+      "message": "A valid email address is required."
+    }
+  ]
 }
 ```
 
----
+## Swagger
 
-## Error Handling
+Swagger UI is mounted at `/api/docs`. The OpenAPI definition is built in `src/docs/swagger.ts` and re-exported from `src/docs/openapi.ts` for tests.
 
-Errors are handled through centralized middleware.
+Swagger includes:
 
-This helps keep controllers clean and provides consistent error responses across the API.
+- OpenAPI `3.0.3`
+- JWT Bearer auth
+- Request schemas
+- Success and error response schemas
+- Role-labeled login examples using non-production `example.test` credentials
+- Query parameter documentation for user listing
+- Protected endpoint security declarations
 
-Example:
+To call protected endpoints in Swagger:
 
-```json
-{
-  "success": false,
-  "statusCode": 404,
-  "message": "User not found"
-}
-```
+1. Register or login.
+2. Copy `data.accessToken`.
+3. Click `Authorize`.
+4. Enter `Bearer <access-token>`.
 
----
+## Testing and CI
 
-## Logging
+Tests use Node's built-in `node:test` runner.
 
-Structured logging can be used for:
+Current test coverage includes:
 
-- HTTP Requests
-- Application Errors
-- Authentication Events
-- Database Errors
-- System Events
-- Deployment Diagnostics
+- `/health` unit and integration behavior
+- OpenAPI path/schema/query contract checks
+- Documented unauthenticated endpoint behavior
+- RBAC middleware behavior
+- User list pagination/search/filter/sort logic
 
-Sensitive values such as passwords, JWT secrets, refresh tokens, and database credentials must never be logged.
-
----
-
-## Pagination
-
-List endpoints can support pagination using query parameters.
-
-Example:
-
-```http
-GET /api/v1/users?page=1&limit=20
-```
-
-Example metadata:
-
-```json
-{
-  "page": 1,
-  "limit": 20,
-  "total": 125,
-  "pages": 7
-}
-```
-
----
-
-## Filtering and Sorting
-
-Example filtering:
-
-```http
-GET /api/v1/users?role=admin
-```
-
-Example sorting:
-
-```http
-GET /api/v1/users?sort=-createdAt
-```
-
-These patterns make list APIs more useful and scalable as datasets grow.
-
----
-
-## Testing
-
-The project supports unit and integration testing.
-
-### Run Tests
-
-```bash
-npm test
-```
-
-### Generate Coverage
-
-```bash
-npm run test:coverage
-```
-
-Tests are organized as:
+GitHub Actions runs on pushes to `main` and pull requests:
 
 ```text
-tests/
-├── integration/
-└── unit/
+npm ci
+npm run lint
+npm run format:check
+npm test
+npm run build
 ```
-
-### Unit Tests
-
-Unit tests focus on individual services, utilities, and business logic.
-
-### Integration Tests
-
-Integration tests verify application behavior across routes, middleware, services, and persistence layers.
-
----
 
 ## Docker
 
-The application can run inside a Docker container.
-
-### Build the Image
+Build:
 
 ```bash
 docker build -t deimr-backend-starter .
 ```
 
-### Run the Container
+Run:
 
 ```bash
-docker run \
-  -p 5001:5001 \
-  --env-file .env \
-  deimr-backend-starter
+docker run --env-file .env -p 5001:5001 deimr-backend-starter
 ```
 
-The application will be available at:
-
-```text
-http://localhost:5001
-```
-
----
-
-## Docker Compose
-
-Docker Compose can be used to run the application and supporting services locally.
-
-Start:
+Docker Compose:
 
 ```bash
-docker compose up
-```
-
-Stop:
-
-```bash
+docker compose up --build
 docker compose down
 ```
 
----
-
-## Deployment
-
-The public API is deployed using **Render**, with **MongoDB Atlas** providing the managed database.
-
-Architecture:
-
-```text
-GitHub
-   │
-   ▼
-GitHub Actions
-   │
-   ▼
-Render
-   │
-   ▼
-Node.js / Express API
-   │
-   ▼
-MongoDB Atlas
-```
-
----
-
-## Production URLs
-
-After deployment, replace the placeholders below with the actual Render service URL.
-
-### API
-
-```text
-https://your-app.onrender.com
-```
-
-### Swagger
-
-```text
-https://your-app.onrender.com/api/docs
-```
-
-### Health Check
-
-```text
-https://your-app.onrender.com/health
-```
-
----
-
 ## Render Deployment
 
-Create a Render Web Service and connect the GitHub repository.
+The repository includes `render.yaml` for Render Blueprint deployment.
 
-Recommended configuration:
+Render configuration:
 
-```text
-Environment
-Node
+| Setting           | Value                     |
+| ----------------- | ------------------------- |
+| Runtime           | Node                      |
+| Node version      | `22`                      |
+| Build command     | `npm ci && npm run build` |
+| Start command     | `npm run start`           |
+| Health check path | `/health`                 |
 
-Build Command
-npm install && npm run build
+Production secrets are not committed. Configure these in Render:
 
-Start Command
-npm run start
-```
+- `MONGODB_URI`
+- `JWT_ACCESS_SECRET`
+- `JWT_REFRESH_SECRET`
+- `CORS_ORIGIN`
 
-Production environment variables should be configured directly inside Render.
+`APP_URL` is optional on Render because the app falls back to Render's `RENDER_EXTERNAL_URL`. Set `APP_URL` only when using a custom domain or non-Render host.
 
-Never store production secrets in the GitHub repository.
+## Security Notes
 
----
-
-## CI/CD
-
-GitHub Actions can automatically validate the project before deployment.
-
-Pipeline:
-
-```text
-Push / Pull Request
-        │
-        ▼
-Install Dependencies
-        │
-        ▼
-Run ESLint
-        │
-        ▼
-Run Tests
-        │
-        ▼
-Build TypeScript
-        │
-        ▼
-Deploy
-```
-
----
-
-## Engineering Principles
-
-The project follows engineering practices intended to keep the application maintainable as it grows.
-
-These include:
-
-- Clean Architecture
-- SOLID Principles
-- Separation of Concerns
-- Service Layer Pattern
-- Repository Pattern
-- REST API Best Practices
-- API Versioning
-- Secure Authentication
-- Centralized Error Handling
-- Environment-Based Configuration
-- Consistent API Responses
-- Testable Business Logic
-- Scalable Project Organization
-
----
-
-## Repository Pattern
-
-Database access is separated from business logic.
-
-```text
-Controller
-    │
-    ▼
-Service
-    │
-    ▼
-Repository
-    │
-    ▼
-MongoDB
-```
-
----
-
-## Development Standards
-
-The project follows several practical development rules:
-
-- Keep controllers small.
-- Keep business logic inside services.
-- Keep database logic inside repositories.
-- Validate incoming requests.
-- Avoid exposing sensitive information.
-- Keep configuration outside source code.
-- Use predictable API response structures.
-- Handle errors globally.
-- Write tests for important application behavior.
-- Run automated checks before deployment.
-
----
-
-## Roadmap
-
-Planned improvements include:
-
-- Email Verification
-- Password Reset
-- Refresh Token Rotation
-- AWS S3 / Cloudinary File Upload
-- Redis Caching
-- Advanced Rate Limiting
-- API Versioning
-- Expanded Unit Tests
-- Expanded Integration Tests
-- Request Correlation IDs
-- Monitoring
-- Structured Production Logging
-- Docker Compose
-- Search
-- Filtering
-- Sorting
-- Pagination
-- Background Jobs
-- Webhooks
-- Production Deployment Improvements
-
----
-
-## Status
-
-🚧 **Active Development**
-
-The project is being developed incrementally.
-
-New features, tests, deployment workflows, security improvements, and documentation will continue to be added as the project evolves.
-
----
+- Passwords are hashed with bcrypt before storage.
+- JWT access and refresh secrets must be strong production values.
+- Refresh tokens are stored, rotated on refresh, and revocable on logout.
+- Protected routes require Bearer tokens and role checks.
+- Password hashes, JWT secrets, refresh tokens, and MongoDB credentials are not returned in API responses.
+- `.env`, `node_modules`, `dist`, and coverage output are excluded from Git.
 
 ## About Deimr
 
-This repository is a public backend reference inspired by the engineering practices used while building **Deimr**, a SaaS platform focused on electronics repair and e-commerce.
+This repository is a public backend reference. It does not include:
 
-The purpose of this repository is to demonstrate backend architecture, API design, security practices, deployment workflows, testing strategies, and code organization without exposing Deimr's private systems.
-
-This repository does **not** contain:
-
-- Deimr Production Source Code
-- Proprietary Business Logic
-- Production Credentials
-- Private Infrastructure Configuration
-- Customer Information
+- Deimr production source code
+- Proprietary business logic
+- Production credentials
+- Private infrastructure configuration
+- Customer information
 - Internal APIs
-- Private Payment Infrastructure
-
----
+- Payment infrastructure
 
 ## License
 
-Released under the **MIT License**.
-
-See the `LICENSE` file for details.
-
----
+Released under the MIT License. See `LICENSE`.
 
 ## Author
 
-### Ibrahim Destiny
+Ibrahim Destiny
 
-**Senior Full-Stack Software Engineer**
-
-Core technologies:
-
-- Node.js
-- TypeScript
-- Express.js
-- MongoDB Atlas
-- REST APIs
-- JWT Authentication
-- Swagger / OpenAPI
-- Docker
-- GitHub Actions
-- Render
-- Software Architecture
-- SaaS Development
-
-### GitHub
-
-https://github.com/destyrhado
-
-### LinkedIn
-
-https://linkedin.com/in/ibrahim-destiny-a24062268
+- GitHub: https://github.com/destyrhado
+- LinkedIn: https://linkedin.com/in/ibrahim-destiny-a24062268

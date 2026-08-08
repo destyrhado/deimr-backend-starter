@@ -25,13 +25,27 @@ type AdminUpdatePayload = ProfileUpdatePayload & {
 };
 
 const MAX_PAGE_LIMIT = 100;
-const SORTABLE_USER_FIELDS = ['name', 'email', 'role', 'status', 'createdAt', 'updatedAt'] as const;
+const SORTABLE_USER_FIELDS = [
+  'name',
+  'email',
+  'role',
+  'status',
+  'createdAt',
+  'updatedAt',
+] as const;
 
-const getSingleQueryValue = (value: unknown) => (Array.isArray(value) ? value[0] : value);
+const getSingleQueryValue = (value: unknown) =>
+  Array.isArray(value) ? value[0] : value;
 
-const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeRegex = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const parsePositiveInteger = (value: unknown, field: string, fallback: number, max?: number) => {
+const parsePositiveInteger = (
+  value: unknown,
+  field: string,
+  fallback: number,
+  max?: number,
+) => {
   const raw = getSingleQueryValue(value);
   if (typeof raw === 'undefined') {
     return fallback;
@@ -40,13 +54,19 @@ const parsePositiveInteger = (value: unknown, field: string, fallback: number, m
   const parsed = Number(raw);
   if (!Number.isInteger(parsed) || parsed < 1 || (max && parsed > max)) {
     const range = max ? `between 1 and ${max}` : 'greater than or equal to 1';
-    throw createHttpError(400, 'Invalid pagination parameters', [{ field, message: `${field} must be an integer ${range}.` }]);
+    throw createHttpError(400, 'Invalid pagination parameters', [
+      { field, message: `${field} must be an integer ${range}.` },
+    ]);
   }
 
   return parsed;
 };
 
-const parseEnumFilter = <T extends string>(value: unknown, field: string, allowed: readonly T[]) => {
+const parseEnumFilter = <T extends string>(
+  value: unknown,
+  field: string,
+  allowed: readonly T[],
+) => {
   const raw = getSingleQueryValue(value);
   if (typeof raw === 'undefined' || String(raw).trim() === '') {
     return undefined;
@@ -55,7 +75,7 @@ const parseEnumFilter = <T extends string>(value: unknown, field: string, allowe
   const normalized = String(raw).toUpperCase();
   if (!allowed.includes(normalized as T)) {
     throw createHttpError(400, 'Invalid filter parameters', [
-      { field, message: `${field} must be one of ${allowed.join(', ')}.` }
+      { field, message: `${field} must be one of ${allowed.join(', ')}.` },
     ]);
   }
 
@@ -63,16 +83,21 @@ const parseEnumFilter = <T extends string>(value: unknown, field: string, allowe
 };
 
 const parseSort = (value: unknown) => {
-  const raw = String(getSingleQueryValue(value) ?? '-createdAt').trim() || '-createdAt';
+  const raw =
+    String(getSingleQueryValue(value) ?? '-createdAt').trim() || '-createdAt';
   const direction = raw.startsWith('-') ? -1 : 1;
   const field = raw.replace(/^-/, '');
 
-  if (!SORTABLE_USER_FIELDS.includes(field as (typeof SORTABLE_USER_FIELDS)[number])) {
+  if (
+    !SORTABLE_USER_FIELDS.includes(
+      field as (typeof SORTABLE_USER_FIELDS)[number],
+    )
+  ) {
     throw createHttpError(400, 'Invalid sort parameter', [
       {
         field: 'sort',
-        message: `Sort must be one of ${SORTABLE_USER_FIELDS.join(', ')} with an optional leading "-".`
-      }
+        message: `Sort must be one of ${SORTABLE_USER_FIELDS.join(', ')} with an optional leading "-".`,
+      },
     ]);
   }
 
@@ -86,23 +111,34 @@ const sanitizeUser = (user: IUser) => ({
   role: user.role,
   status: user.status,
   createdAt: user.createdAt,
-  updatedAt: user.updatedAt
+  updatedAt: user.updatedAt,
 });
 
 const validateUserId = (id: string) => {
   if (!mongoose.isValidObjectId(id)) {
-    throw createHttpError(400, 'Invalid user id', [{ field: 'id', message: 'User id must be a valid MongoDB ObjectId.' }]);
+    throw createHttpError(400, 'Invalid user id', [
+      { field: 'id', message: 'User id must be a valid MongoDB ObjectId.' },
+    ]);
   }
 };
 
 export class UserService {
   static async list(options: ListOptions) {
     const page = parsePositiveInteger(options.page, 'page', 1);
-    const limit = parsePositiveInteger(options.limit, 'limit', 20, MAX_PAGE_LIMIT);
+    const limit = parsePositiveInteger(
+      options.limit,
+      'limit',
+      20,
+      MAX_PAGE_LIMIT,
+    );
     const filter: FilterQuery<IUser> = {};
     const search = String(getSingleQueryValue(options.search) ?? '').trim();
     const role = parseEnumFilter(options.role, 'role', Object.values(UserRole));
-    const status = parseEnumFilter(options.status, 'status', Object.values(UserStatus));
+    const status = parseEnumFilter(
+      options.status,
+      'status',
+      Object.values(UserStatus),
+    );
     const sort = parseSort(options.sort);
 
     if (search) {
@@ -120,7 +156,7 @@ export class UserService {
     const users = await UserRepository.findAll(filter, {
       skip: (page - 1) * limit,
       limit,
-      sort
+      sort,
     });
 
     const pages = Math.ceil(total / limit);
@@ -133,8 +169,8 @@ export class UserService {
         total,
         pages,
         hasNextPage: page < pages,
-        hasPreviousPage: page > 1
-      }
+        hasPreviousPage: page > 1,
+      },
     };
   }
 
@@ -186,7 +222,10 @@ export class UserService {
     }
 
     if (user.role === UserRole.SUPER_ADMIN && role !== UserRole.SUPER_ADMIN) {
-      throw createHttpError(403, 'Cannot remove SUPER_ADMIN role from a SUPER_ADMIN');
+      throw createHttpError(
+        403,
+        'Cannot remove SUPER_ADMIN role from a SUPER_ADMIN',
+      );
     }
 
     const updated = await UserRepository.updateById(id, { role });
@@ -232,7 +271,7 @@ export class UserService {
     return {
       id: user._id.toString(),
       email: user.email,
-      role: user.role
+      role: user.role,
     };
   }
 }

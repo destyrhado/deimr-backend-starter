@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { type SignOptions } from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { User } from '../models/user.js';
 import { RefreshTokenRepository } from '../repositories/refreshToken.repository.js';
@@ -31,7 +31,7 @@ export class AuthService {
       role: user.role,
       status: user.status,
       createdAt: user.createdAt,
-      updatedAt: user.updatedAt
+      updatedAt: user.updatedAt,
     };
   }
 
@@ -46,13 +46,17 @@ export class AuthService {
       throw createHttpError(401, 'Invalid credentials');
     }
 
-    const payload = { sub: user._id.toString(), email: user.email, role: user.role };
+    const payload = {
+      sub: user._id.toString(),
+      email: user.email,
+      role: user.role,
+    };
     const accessToken = this.generateAccessToken(payload);
     const refreshToken = this.generateRefreshToken(payload);
     await RefreshTokenRepository.create({
       token: refreshToken,
       userId: user._id.toString(),
-      expiresAt: getTokenExpiry(refreshToken)
+      expiresAt: getTokenExpiry(refreshToken),
     });
 
     return {
@@ -65,14 +69,18 @@ export class AuthService {
         role: user.role,
         status: user.status,
         createdAt: user.createdAt,
-        updatedAt: user.updatedAt
-      }
+        updatedAt: user.updatedAt,
+      },
     };
   }
 
   static async refresh(token: string) {
     const storedToken = await RefreshTokenRepository.findByToken(token);
-    if (!storedToken || storedToken.revokedAt || storedToken.expiresAt <= new Date()) {
+    if (
+      !storedToken ||
+      storedToken.revokedAt ||
+      storedToken.expiresAt <= new Date()
+    ) {
       throw createHttpError(401, 'Refresh token is invalid or expired');
     }
 
@@ -88,14 +96,22 @@ export class AuthService {
       throw createHttpError(401, 'Refresh token is invalid or expired');
     }
 
-    const accessToken = this.generateAccessToken({ sub: payload.sub, email: payload.email, role: payload.role });
-    const refreshToken = this.generateRefreshToken({ sub: payload.sub, email: payload.email, role: payload.role });
+    const accessToken = this.generateAccessToken({
+      sub: payload.sub,
+      email: payload.email,
+      role: payload.role,
+    });
+    const refreshToken = this.generateRefreshToken({
+      sub: payload.sub,
+      email: payload.email,
+      role: payload.role,
+    });
 
     await RefreshTokenRepository.revoke(token);
     await RefreshTokenRepository.create({
       token: refreshToken,
       userId: payload.sub,
-      expiresAt: getTokenExpiry(refreshToken)
+      expiresAt: getTokenExpiry(refreshToken),
     });
 
     return {
@@ -108,14 +124,18 @@ export class AuthService {
         role: user.role,
         status: user.status,
         createdAt: user.createdAt,
-        updatedAt: user.updatedAt
-      }
+        updatedAt: user.updatedAt,
+      },
     };
   }
 
   static async logout(token: string) {
     const storedToken = await RefreshTokenRepository.findByToken(token);
-    if (!storedToken || storedToken.revokedAt || storedToken.expiresAt <= new Date()) {
+    if (
+      !storedToken ||
+      storedToken.revokedAt ||
+      storedToken.expiresAt <= new Date()
+    ) {
       throw createHttpError(401, 'Refresh token is invalid or expired');
     }
 
@@ -124,10 +144,14 @@ export class AuthService {
   }
 
   static generateAccessToken(payload: AuthPayload) {
-    return jwt.sign(payload, env.jwtAccessSecret, { expiresIn: env.jwtAccessExpiresIn });
+    return jwt.sign(payload, env.jwtAccessSecret, {
+      expiresIn: env.jwtAccessExpiresIn as SignOptions['expiresIn'],
+    });
   }
 
   static generateRefreshToken(payload: AuthPayload) {
-    return jwt.sign(payload, env.jwtRefreshSecret, { expiresIn: env.jwtRefreshExpiresIn });
+    return jwt.sign(payload, env.jwtRefreshSecret, {
+      expiresIn: env.jwtRefreshExpiresIn as SignOptions['expiresIn'],
+    });
   }
 }

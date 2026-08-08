@@ -12,5 +12,8 @@ export class HttpError extends Error {
   }
 }
 
-export const createHttpError = (statusCode: number, message: string, errors?: ValidationError[]) =>
-  new HttpError(statusCode, message, errors);
+export const createHttpError = (
+  statusCode: number,
+  message: string,
+  errors?: ValidationError[],
+) => new HttpError(statusCode, message, errors);

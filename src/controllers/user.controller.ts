@@ -5,7 +5,9 @@ import { sendSuccess } from '../utils/response.js';
 export class UserController {
   static async list(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await UserService.list(req.query as Record<string, string>);
+      const result = await UserService.list(
+        req.query as Record<string, string>,
+      );
       res.status(200).json(sendSuccess('Users loaded successfully', result));
     } catch (error) {
       next(error);
@@ -32,7 +34,10 @@ export class UserController {
 
   static async updateProfile(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await UserService.updateProfile(req.user?.id ?? '', req.body);
+      const result = await UserService.updateProfile(
+        req.user?.id ?? '',
+        req.body,
+      );
       res.status(200).json(sendSuccess('Profile updated successfully', result));
     } catch (error) {
       next(error);
@@ -41,7 +46,11 @@ export class UserController {
 
   static async updateRole(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await UserService.updateRole(req.params.id, req.body.role, req.user?.id ?? '');
+      const result = await UserService.updateRole(
+        req.params.id,
+        req.body.role,
+        req.user?.id ?? '',
+      );
       res.status(200).json(sendSuccess('Role updated successfully', result));
     } catch (error) {
       next(error);
@@ -59,7 +68,10 @@ export class UserController {
 
   static async delete(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await UserService.delete(req.params.id, req.user?.id ?? '');
+      const result = await UserService.delete(
+        req.params.id,
+        req.user?.id ?? '',
+      );
       res.status(200).json(sendSuccess('User deleted successfully', result));
     } catch (error) {
       next(error);

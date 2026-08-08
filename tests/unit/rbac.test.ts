@@ -10,23 +10,43 @@ import { UserRole } from '../../src/types/http.js';
 
 const tokenFor = (role: UserRole) =>
   AuthService.generateAccessToken({
-    sub: role === UserRole.USER ? '66b7f1a2c0a4f7b5f0d9a111' : role === UserRole.ADMIN ? '66b7f1a2c0a4f7b5f0d9a222' : '66b7f1a2c0a4f7b5f0d9a333',
+    sub:
+      role === UserRole.USER
+        ? '66b7f1a2c0a4f7b5f0d9a111'
+        : role === UserRole.ADMIN
+          ? '66b7f1a2c0a4f7b5f0d9a222'
+          : '66b7f1a2c0a4f7b5f0d9a333',
     email: `${role.toLowerCase()}@example.test`,
-    role
+    role,
   });
 
 test('RBAC enforces USER, ADMIN, and SUPER_ADMIN permissions', async () => {
   const app = express();
   app.use(requestContext);
-  app.get('/profile', authenticate, authorize('USER', 'ADMIN', 'SUPER_ADMIN'), (req, res) => {
-    res.json({ ok: true, role: req.user?.role });
-  });
-  app.get('/admin', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), (req, res) => {
-    res.json({ ok: true, role: req.user?.role });
-  });
-  app.get('/super-admin', authenticate, authorize('SUPER_ADMIN'), (req, res) => {
-    res.json({ ok: true, role: req.user?.role });
-  });
+  app.get(
+    '/profile',
+    authenticate,
+    authorize('USER', 'ADMIN', 'SUPER_ADMIN'),
+    (req, res) => {
+      res.json({ ok: true, role: req.user?.role });
+    },
+  );
+  app.get(
+    '/admin',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN'),
+    (req, res) => {
+      res.json({ ok: true, role: req.user?.role });
+    },
+  );
+  app.get(
+    '/super-admin',
+    authenticate,
+    authorize('SUPER_ADMIN'),
+    (req, res) => {
+      res.json({ ok: true, role: req.user?.role });
+    },
+  );
   app.use(errorHandler);
 
   const server = createServer(app);
@@ -41,7 +61,7 @@ test('RBAC enforces USER, ADMIN, and SUPER_ADMIN permissions', async () => {
 
   const request = (path: string, token?: string) =>
     fetch(`http://127.0.0.1:${address.port}${path}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
 
   const userToken = tokenFor(UserRole.USER);
@@ -63,7 +83,10 @@ test('RBAC enforces USER, ADMIN, and SUPER_ADMIN permissions', async () => {
   const userAdminBody = await userAdmin.json();
   assert.equal(userAdmin.status, 403);
   assert.equal(userAdminBody.success, false);
-  assert.equal(userAdminBody.message, 'You do not have permission to access this resource.');
+  assert.equal(
+    userAdminBody.message,
+    'You do not have permission to access this resource.',
+  );
 
   const adminList = await request('/admin', adminToken);
   assert.equal(adminList.status, 200);

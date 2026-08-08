@@ -4,7 +4,11 @@ import { env } from '../config/env.js';
 import type { AuthPayload } from '../types/http.js';
 import { createHttpError } from '../utils/httpError.js';
 
-export const authenticate = (req: Request, res: Response, next: NextFunction) => {
+export const authenticate = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
     next(createHttpError(401, 'Unauthorized'));
@@ -21,16 +25,23 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
   }
 };
 
-export const authorize = (...roles: string[]) => (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user) {
-    next(createHttpError(401, 'Unauthorized'));
-    return;
-  }
+export const authorize =
+  (...roles: string[]) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      next(createHttpError(401, 'Unauthorized'));
+      return;
+    }
 
-  if (!roles.includes(req.user.role)) {
-    next(createHttpError(403, 'You do not have permission to access this resource.'));
-    return;
-  }
+    if (!roles.includes(req.user.role)) {
+      next(
+        createHttpError(
+          403,
+          'You do not have permission to access this resource.',
+        ),
+      );
+      return;
+    }
 
-  next();
-};
+    next();
+  };

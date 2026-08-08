@@ -1,13 +1,15 @@
 import type { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service.js';
-import { sendError, sendSuccess } from '../utils/response.js';
+import { sendSuccess } from '../utils/response.js';
 
 export class AuthController {
   static async register(req: Request, res: Response, next: NextFunction) {
     try {
       const { name, email, password } = req.body;
       const result = await AuthService.register(name, email, password);
-      res.status(201).json(sendSuccess('User registered successfully', result, 201));
+      res
+        .status(201)
+        .json(sendSuccess('User registered successfully', result, 201));
     } catch (error) {
       next(error);
     }

@@ -14,24 +14,31 @@ export interface IUser extends Document {
 const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, trim: true, lowercase: true, index: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+      index: true,
+    },
     passwordHash: { type: String, required: true, minlength: 8 },
     role: {
       type: String,
       enum: Object.values(UserRole),
       default: UserRole.USER,
-      index: true
+      index: true,
     },
     status: {
       type: String,
       enum: Object.values(UserStatus),
       default: UserStatus.ACTIVE,
-      index: true
-    }
+      index: true,
+    },
   },
   {
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
 
 userSchema.index({ role: 1, status: 1 });

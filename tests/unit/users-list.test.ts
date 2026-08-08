@@ -10,7 +10,7 @@ const mockUser = {
   role: 'ADMIN',
   status: 'ACTIVE',
   createdAt: new Date('2026-08-08T00:00:00.000Z'),
-  updatedAt: new Date('2026-08-08T00:00:00.000Z')
+  updatedAt: new Date('2026-08-08T00:00:00.000Z'),
 };
 
 test('UserService.list applies pagination, search, filtering, and sorting', async (t) => {
@@ -40,7 +40,7 @@ test('UserService.list applies pagination, search, filtering, and sorting', asyn
     search: 'jane',
     role: 'admin',
     status: 'active',
-    sort: 'email'
+    sort: 'email',
   });
 
   assert.equal(capturedFilter.role, 'ADMIN');
@@ -55,23 +55,27 @@ test('UserService.list applies pagination, search, filtering, and sorting', asyn
     total: 12,
     pages: 3,
     hasNextPage: true,
-    hasPreviousPage: true
+    hasPreviousPage: true,
   });
 });
 
 test('UserService.list rejects unsupported query values before querying MongoDB', async () => {
   await assert.rejects(
     () => UserService.list({ limit: '101' }),
-    (error: any) => error.statusCode === 400 && error.message === 'Invalid pagination parameters'
+    (error: any) =>
+      error.statusCode === 400 &&
+      error.message === 'Invalid pagination parameters',
   );
 
   await assert.rejects(
     () => UserService.list({ role: 'owner' }),
-    (error: any) => error.statusCode === 400 && error.message === 'Invalid filter parameters'
+    (error: any) =>
+      error.statusCode === 400 && error.message === 'Invalid filter parameters',
   );
 
   await assert.rejects(
     () => UserService.list({ sort: 'passwordHash' }),
-    (error: any) => error.statusCode === 400 && error.message === 'Invalid sort parameter'
+    (error: any) =>
+      error.statusCode === 400 && error.message === 'Invalid sort parameter',
   );
 });

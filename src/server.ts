@@ -8,16 +8,20 @@ const startServer = async () => {
       await mongoose.connect(env.mongoUri);
     }
 
-    app.listen(env.port, () => {
-      console.log(`Server is running on http://localhost:${env.port}`);
-    }).on('error', (error: any) => {
-      if (error?.code === 'EADDRINUSE') {
-        console.error(`Port ${env.port} is already in use. Please free port ${env.port} and try again.`);
-      } else {
-        console.error('Server error:', error);
-      }
-      process.exit(1);
-    });
+    app
+      .listen(env.port, () => {
+        console.log(`Server is running on http://localhost:${env.port}`);
+      })
+      .on('error', (error: any) => {
+        if (error?.code === 'EADDRINUSE') {
+          console.error(
+            `Port ${env.port} is already in use. Please free port ${env.port} and try again.`,
+          );
+        } else {
+          console.error('Server error:', error);
+        }
+        process.exit(1);
+      });
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);

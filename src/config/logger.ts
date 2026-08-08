@@ -9,6 +9,7 @@ export const logger = {
   error: (message: string) => console.error(formatMessage('ERROR', message)),
   debug: (message: string) => console.debug(formatMessage('DEBUG', message)),
   stream: {
-    write: (message: string) => console.info(formatMessage('INFO', message.trim()))
-  }
+    write: (message: string) =>
+      console.info(formatMessage('INFO', message.trim())),
+  },
 };
