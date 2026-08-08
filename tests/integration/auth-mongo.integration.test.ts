@@ -51,6 +51,13 @@ test(
     const { server, baseUrl } = await listen();
 
     try {
+      const readiness = await fetch(`${baseUrl}/ready`);
+      const readinessBody = await readiness.json();
+
+      assert.equal(readiness.status, 200);
+      assert.equal(readinessBody.status, 'ready');
+      assert.equal(readinessBody.checks.database.ready, true);
+
       const credentials = {
         name: 'Mongo Auth User',
         email: 'mongo-auth@example.test',

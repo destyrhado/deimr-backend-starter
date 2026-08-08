@@ -14,6 +14,7 @@ import { logger } from './config/logger.js';
 import { requestContext } from './middleware/requestContext.js';
 import { API_VERSION, SERVICE_NAME } from './constants/api.js';
 import { metricsHandler, metricsMiddleware } from './middleware/metrics.js';
+import { getDatabaseHealth } from './config/database.js';
 
 const app = express();
 
@@ -28,7 +29,6 @@ app.use(
     { stream: logger.stream },
   ),
 );
-app.use(apiRateLimiter);
 app.use(express.json());
 
 app.get('/', (_req: Request, res: Response) => {
@@ -42,6 +42,22 @@ app.get('/health', (_req: Request, res: Response) => {
     version: API_VERSION,
     status: 'ok',
     uptime: process.uptime(),
+  });
+});
+
+app.get('/ready', (_req: Request, res: Response) => {
+  const database = getDatabaseHealth();
+  const ready = database.ready;
+
+  res.status(ready ? 200 : 503).json({
+    service: SERVICE_NAME,
+    environment: env.nodeEnv,
+    version: API_VERSION,
+    status: ready ? 'ready' : 'not_ready',
+    uptime: process.uptime(),
+    checks: {
+      database,
+    },
   });
 });
 
@@ -66,6 +82,7 @@ app.use(
     },
   }),
 );
+app.use('/api/v1', apiRateLimiter);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', usersRoutes);
 

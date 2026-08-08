@@ -51,13 +51,18 @@ jobs:
                 throw new Error(`Unexpected health payload: ${JSON.stringify(health)}`);
               }
 
+              const readiness = JSON.parse((await fetchText('/ready')).body);
+              if (readiness.status !== 'ready' || readiness.checks?.database?.ready !== true) {
+                throw new Error(`Unexpected readiness payload: ${JSON.stringify(readiness)}`);
+              }
+
               const metrics = (await fetchText('/metrics')).body;
               if (!metrics.includes('deimr_http_requests_total')) {
                 throw new Error('Metrics endpoint did not include request counter');
               }
 
               const swagger = (await fetchText('/api/docs/swagger-ui-init.js')).body;
-              for (const marker of ['"RootResponse"', '"/metrics"', 'API root status returned']) {
+              for (const marker of ['"RootResponse"', '"/ready"', '"/metrics"', 'API root status returned']) {
                 if (!swagger.includes(marker)) {
                   throw new Error(`Swagger is missing marker ${marker}`);
                 }

@@ -426,6 +426,57 @@ const swaggerDefinition = {
         },
         required: ['service', 'environment', 'version', 'status', 'uptime'],
       },
+      DatabaseReadiness: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          configured: { type: 'boolean', example: true },
+          state: {
+            type: 'string',
+            enum: [
+              'disconnected',
+              'connected',
+              'connecting',
+              'disconnecting',
+              'unknown',
+            ],
+            example: 'connected',
+          },
+          ready: { type: 'boolean', example: true },
+        },
+        required: ['configured', 'state', 'ready'],
+      },
+      ReadinessResponse: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          service: { type: 'string', example: SERVICE_NAME },
+          environment: { type: 'string', example: 'production' },
+          version: { type: 'string', example: API_VERSION },
+          status: {
+            type: 'string',
+            enum: ['ready', 'not_ready'],
+            example: 'ready',
+          },
+          uptime: { type: 'number', minimum: 0, example: 12.345 },
+          checks: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              database: { $ref: schemaRef('DatabaseReadiness') },
+            },
+            required: ['database'],
+          },
+        },
+        required: [
+          'service',
+          'environment',
+          'version',
+          'status',
+          'uptime',
+          'checks',
+        ],
+      },
     },
     responses: {
       ValidationErrorResponse: jsonResponse(
@@ -586,7 +637,6 @@ const swaggerDefinition = {
         description: 'Returns a public status message for the API root.',
         responses: {
           '200': jsonResponse('API root status returned.', 'RootResponse'),
-          '429': { $ref: responseRef('TooManyRequests') },
           '500': { $ref: responseRef('ServerError') },
         },
       },
@@ -599,7 +649,19 @@ const swaggerDefinition = {
           'Returns service, environment, version, status, and process uptime for uptime monitoring.',
         responses: {
           '200': jsonResponse('Service is healthy.', 'HealthResponse'),
-          '429': { $ref: responseRef('TooManyRequests') },
+          '500': { $ref: responseRef('ServerError') },
+        },
+      },
+    },
+    '/ready': {
+      get: {
+        tags: ['System'],
+        summary: 'Get service readiness status.',
+        description:
+          'Returns dependency readiness for deployment health checks. The endpoint returns 503 when MongoDB is not configured or not connected.',
+        responses: {
+          '200': jsonResponse('Service is ready.', 'ReadinessResponse'),
+          '503': jsonResponse('Service is not ready.', 'ReadinessResponse'),
           '500': { $ref: responseRef('ServerError') },
         },
       },
@@ -619,7 +681,6 @@ const swaggerDefinition = {
               'deimr_http_requests_total 42',
             ].join('\n'),
           ),
-          '429': { $ref: responseRef('TooManyRequests') },
           '500': { $ref: responseRef('ServerError') },
         },
       },

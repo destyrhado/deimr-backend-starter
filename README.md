@@ -20,6 +20,7 @@ This repository is an independent public reference inspired by backend practices
 | ------------ | ----------------------------------------------------- |
 | API root     | `https://deimr-backend-starter.onrender.com`          |
 | Health check | `https://deimr-backend-starter.onrender.com/health`   |
+| Readiness    | `https://deimr-backend-starter.onrender.com/ready`    |
 | Metrics      | `https://deimr-backend-starter.onrender.com/metrics`  |
 | Swagger UI   | `https://deimr-backend-starter.onrender.com/api/docs` |
 
@@ -50,10 +51,13 @@ The live service is hosted on Render. The repository includes `render.yaml`; pro
 - Pagination, search, role filtering, status filtering, and whitelisted sorting for user lists
 - Request validation with consistent validation error payloads
 - Centralized error handling with request IDs
-- Helmet, CORS, rate limiting, and HTTP request logging
+- Helmet, CORS, API rate limiting, and HTTP request logging
+- Fail-fast production config validation
+- Split liveness and MongoDB readiness checks
 - Prometheus-style HTTP request metrics at `/metrics`
 - Swagger/OpenAPI documentation and contract tests
 - Unit, integration, and Mongo-backed auth-flow tests using `node:test`
+- Graceful shutdown on `SIGTERM` and `SIGINT`
 - Docker, Docker Compose, GitHub Actions CI, and Render deployment config
 - Live deployment smoke-test workflow
 
@@ -92,6 +96,10 @@ Responsibilities are split by layer:
 - The project uses Node's built-in `node:test` runner to keep the test stack small while still covering unit, integration, RBAC, and OpenAPI contract behavior.
 - Swagger/OpenAPI is treated as part of the API contract, with tests that keep documented endpoints, schemas, examples, and runtime behavior aligned.
 - Validation and error handling are centralized so clients receive consistent response shapes with request IDs across public and protected endpoints.
+- Production startup fails fast when required secrets, MongoDB configuration, CORS, or public URL metadata are missing or unsafe.
+- `/health` is process liveness; `/ready` is deployment readiness and fails when MongoDB is not connected.
+- Rate limiting is scoped to `/api/v1` so deployment health checks and metrics are not throttled.
+- Expired refresh-token records use a MongoDB TTL index for cleanup.
 - TypeScript and required type packages are production dependencies because the current Render build command compiles during deployment with `npm install && npm run build`.
 - CI verifies linting, formatting, tests, TypeScript compilation, and Docker image construction before code is considered shippable.
 
@@ -100,6 +108,9 @@ Responsibilities are split by layer:
 ```text
 deimr-backend-starter/
 ├── .github/workflows/
+├── docs/
+│   ├── adr/
+│   └── OPERATIONS.md
 ├── src/
 │   ├── config/
 │   ├── constants/
@@ -157,16 +168,18 @@ http://localhost:5001/api/docs
 | ------------------------ | ------------------: | ----------------------------------------- | -------------------------------------------------------------------------------------------- |
 | `PORT`                   |                  No | `5001`                                    | HTTP port                                                                                    |
 | `NODE_ENV`               |                  No | `development`                             | Runtime environment                                                                          |
-| `APP_URL`                |                  No | `http://localhost:5001` in `.env.example` | Public API URL used by Swagger; production also falls back to Render's `RENDER_EXTERNAL_URL` |
-| `MONGODB_URI`            | Yes for persistence | empty                                     | MongoDB Atlas connection string                                                              |
+| `APP_URL`                | Yes in production\* | `http://localhost:5001` in `.env.example` | Public API URL used by Swagger; production also falls back to Render's `RENDER_EXTERNAL_URL` |
+| `MONGODB_URI`            |   Yes in production | empty                                     | MongoDB Atlas connection string                                                              |
 | `MONGODB_TEST_URI`       |   Only for DB tests | empty                                     | Disposable MongoDB database used by the Mongo-backed auth integration suite                  |
 | `JWT_ACCESS_SECRET`      |   Yes in production | `dev-access-secret`                       | Access token signing secret                                                                  |
 | `JWT_REFRESH_SECRET`     |   Yes in production | `dev-refresh-secret`                      | Refresh token signing secret                                                                 |
 | `JWT_ACCESS_EXPIRES_IN`  |                  No | `15m`                                     | Access token lifetime                                                                        |
 | `JWT_REFRESH_EXPIRES_IN` |                  No | `7d`                                      | Refresh token lifetime                                                                       |
-| `CORS_ORIGIN`            |                  No | `http://localhost:3000`                   | Allowed browser origin                                                                       |
+| `CORS_ORIGIN`            |   Yes in production | `http://localhost:3000`                   | Allowed browser origin                                                                       |
 | `RATE_LIMIT_WINDOW_MS`   |                  No | `900000`                                  | Rate limit window                                                                            |
 | `RATE_LIMIT_MAX`         |                  No | `100`                                     | Requests allowed per window per IP                                                           |
+
+\* `APP_URL` can be omitted on Render when `RENDER_EXTERNAL_URL` or `RENDER_EXTERNAL_HOSTNAME` is available.
 
 ## Scripts
 
@@ -189,7 +202,8 @@ http://localhost:5001/api/docs
 | Method   | Path                     | Auth | Roles                          | Description                                                                           |
 | -------- | ------------------------ | ---- | ------------------------------ | ------------------------------------------------------------------------------------- |
 | `GET`    | `/`                      | No   | Public                         | API root status message                                                               |
-| `GET`    | `/health`                | No   | Public                         | Service health payload                                                                |
+| `GET`    | `/health`                | No   | Public                         | Process liveness payload                                                              |
+| `GET`    | `/ready`                 | No   | Public                         | Deployment readiness payload with MongoDB status                                      |
 | `GET`    | `/metrics`               | No   | Public                         | Prometheus-style process metrics                                                      |
 | `GET`    | `/api/docs`              | No   | Public                         | Swagger UI                                                                            |
 | `POST`   | `/api/v1/auth/register`  | No   | Public                         | Register a `USER` account                                                             |
@@ -310,6 +324,7 @@ Tests use Node's built-in `node:test` runner.
 Current test coverage includes:
 
 - `/health` unit and integration behavior
+- `/ready` and `/metrics` integration behavior
 - Mongo-backed registration, login, profile, refresh rotation, refresh-token reuse detection, and logout behavior
 - OpenAPI path/schema/query contract checks
 - Documented unauthenticated endpoint behavior
@@ -329,7 +344,7 @@ npm run build
 docker build -t deimr-backend-starter .
 ```
 
-The live smoke-test workflow runs after successful CI on `main` and can also be triggered manually. It verifies the deployed Render root, health, metrics, and Swagger surfaces.
+The live smoke-test workflow runs after successful CI on `main` and can also be triggered manually. It verifies the deployed Render root, health, readiness, metrics, and Swagger surfaces.
 
 ## Docker
 
@@ -364,7 +379,7 @@ Render configuration:
 | Node version      | `22.x`                         |
 | Build command     | `npm install && npm run build` |
 | Start command     | `npm run start`                |
-| Health check path | `/health`                      |
+| Health check path | `/ready`                       |
 
 Production secrets are not committed. Configure these in Render:
 
@@ -376,6 +391,8 @@ Production secrets are not committed. Configure these in Render:
 `APP_URL` is optional on Render because the app falls back to Render's `RENDER_EXTERNAL_URL`. Set `APP_URL` only when using a custom domain or non-Render host.
 
 The build command matches the current Render dashboard command. TypeScript and the type packages needed by `tsc` are listed under production dependencies so Render can compile even when dev dependencies are omitted during production builds.
+
+Operational details, smoke-test steps, and incident checks are documented in `docs/OPERATIONS.md`. Architecture decision records live in `docs/adr/`.
 
 ## Future Improvements
 
@@ -389,9 +406,11 @@ The build command matches the current Render dashboard command. TypeScript and t
 
 - Passwords are hashed with bcrypt before storage.
 - JWT access and refresh secrets must be strong production values and must not use the development defaults.
+- Production startup rejects missing MongoDB, unsafe JWT secrets, missing CORS origin, and missing public URL metadata.
 - Refresh tokens are returned to clients only at login/refresh time; the database stores HMAC-SHA256 token digests for lookup, rotation, revocation, and token-family reuse detection.
+- Expired refresh-token records are eligible for MongoDB TTL cleanup after `expiresAt`.
 - Protected routes require Bearer tokens and role checks.
-- Helmet, CORS, and rate limiting are enabled globally.
+- Helmet, CORS, and request IDs are enabled globally; rate limiting is applied to `/api/v1`.
 - Password hashes, JWT secrets, stored token digests, and MongoDB credentials are not returned in API responses.
 - `.env`, `node_modules`, `dist`, and coverage output are excluded from Git.
 

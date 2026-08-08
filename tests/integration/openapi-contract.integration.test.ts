@@ -3,8 +3,12 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import app from '../../src/app.js';
 
-test('documented endpoints are mounted and return documented error/health shapes without credentials', async () => {
+test('documented endpoints are mounted and return documented error/health shapes without credentials', async (t) => {
   const server = createServer(app);
+  t.after(() => {
+    server.close();
+  });
+
   const address = await new Promise<{ port: number }>((resolve) => {
     server.listen(0, '127.0.0.1', () => {
       const addr = server.address();
@@ -33,6 +37,13 @@ test('documented endpoints are mounted and return documented error/health shapes
     'uptime',
     'version',
   ]);
+
+  const readiness = await fetch(`${baseUrl}/ready`);
+  const readinessBody = await readiness.json();
+  assert.equal(readiness.status, 503);
+  assert.equal(readinessBody.status, 'not_ready');
+  assert.equal(typeof readinessBody.checks.database.configured, 'boolean');
+  assert.equal(readinessBody.checks.database.ready, false);
 
   const metrics = await fetch(`${baseUrl}/metrics`);
   const metricsBody = await metrics.text();
@@ -88,6 +99,4 @@ test('documented endpoints are mounted and return documented error/health shapes
     assert.equal(responseBody.statusCode, 401);
     assert.equal(typeof responseBody.requestId, 'string');
   }
-
-  server.close();
 });

@@ -18,6 +18,7 @@ test('OpenAPI exposes only mounted API endpoints with reusable schemas', () => {
     '/api/v1/users/{id}/role',
     '/health',
     '/metrics',
+    '/ready',
   ]);
 
   for (const schema of [
@@ -25,6 +26,7 @@ test('OpenAPI exposes only mounted API endpoints with reusable schemas', () => {
     'AuthResponse',
     'ErrorResponse',
     'PaginationResponse',
+    'ReadinessResponse',
     'ValidationError',
     'RoleUpdateResponse',
     'RootResponse',
@@ -40,6 +42,7 @@ test('OpenAPI exposes only mounted API endpoints with reusable schemas', () => {
       .type,
     'string',
   );
+  assert.ok(spec.paths['/ready'].get.responses['503']);
   assert.equal(
     JSON.stringify(spec).includes('deimr-backend-starter.onrender.com'),
     false,
@@ -123,6 +126,10 @@ test('OpenAPI production server URL falls back to Render external URL', () => {
         ...process.env,
         NODE_ENV: 'production',
         APP_URL: '',
+        MONGODB_URI: 'mongodb://127.0.0.1:27017/deimr_backend_test',
+        JWT_ACCESS_SECRET: 'a'.repeat(32),
+        JWT_REFRESH_SECRET: 'b'.repeat(32),
+        CORS_ORIGIN: 'https://example.test',
         RENDER_EXTERNAL_URL: 'https://deimr-backend-starter.onrender.com',
       },
     },
