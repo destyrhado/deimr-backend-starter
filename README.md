@@ -302,6 +302,7 @@ npm run lint
 npm run format:check
 npm test
 npm run build
+docker build -t deimr-backend-starter .
 ```
 
 ## Docker
